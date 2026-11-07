@@ -7,6 +7,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 export const app = express();
 
 app.disable('x-powered-by');
+app.set('trust proxy', env.trustProxy);
 app.use(helmet());
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
@@ -22,6 +23,7 @@ app.use('/api', (_request, response) => {
 });
 
 app.use((error, _request, response, _next) => {
-  console.error(error);
-  response.status(500).json({ error: 'Internal server error' });
+  if (error.status >= 500 || !error.status) console.error(error);
+  response.setHeader('Cache-Control', 'no-store');
+  response.status(error.status || 500).json({ error: error.status ? error.message : 'Internal server error' });
 });

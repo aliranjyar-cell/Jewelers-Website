@@ -45,6 +45,7 @@ docs/                   product and technical decisions
 - Paginate catalog and admin lists at the API. Resize and serve product images in suitable formats and sizes.
 - Use database indexes for common lookups, parameterized queries, validated request bodies, secure password hashing, and role checks on every protected API operation.
 - Store secrets in environment configuration, not source control. Use HTTPS and production backups before launch.
+- Admin sign-in uses password plus TOTP MFA, high-cost built-in scrypt password hashing, database-backed opaque sessions, `HttpOnly`/`Secure`/`SameSite=Strict` cookies, CSRF tokens, server-checked roles, and throttled login attempts. Provision administrators only from the interactive server script; never expose public admin registration.
 
 ## First build sequence
 
