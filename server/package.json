@@ -1,0 +1,17 @@
+{
+  "name": "@jewelry/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.0",
+    "dotenv": "^16.0.0",
+    "express": "^5.0.0",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.0.0"
+  }
+}

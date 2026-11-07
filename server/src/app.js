@@ -1,0 +1,24 @@
+import cors from 'cors';
+import express from 'express';
+import helmet from 'helmet';
+import { env } from './config/env.js';
+
+export const app = express();
+
+app.disable('x-powered-by');
+app.use(helmet());
+app.use(cors({ origin: env.clientOrigin }));
+app.use(express.json({ limit: '1mb' }));
+
+app.get('/api/health', (_request, response) => {
+  response.json({ status: 'ok', service: 'jewelry-store-api' });
+});
+
+app.use('/api', (_request, response) => {
+  response.status(404).json({ error: 'API route not found' });
+});
+
+app.use((error, _request, response, _next) => {
+  console.error(error);
+  response.status(500).json({ error: 'Internal server error' });
+});
