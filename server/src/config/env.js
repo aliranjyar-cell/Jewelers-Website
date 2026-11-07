@@ -3,6 +3,9 @@ import 'dotenv/config';
 export const env = {
   port: Number(process.env.PORT || 4000),
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://127.0.0.1:5173',
+  nodeEnv: process.env.NODE_ENV || 'development',
+  sessionCookieName: process.env.NODE_ENV === 'production' ? '__Host-admin_session' : 'admin_session',
+  authEncryptionKey: process.env.AUTH_ENCRYPTION_KEY || '',
   database: {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 3306),
