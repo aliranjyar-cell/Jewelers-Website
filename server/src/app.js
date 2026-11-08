@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { dashboardRoutes } from './modules/admin-dashboard/dashboard.routes.js';
 
 export const app = express();
 
@@ -13,6 +14,7 @@ app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/admin/auth', authRoutes);
+app.use('/api/admin/dashboard', dashboardRoutes);
 
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', service: 'jewelry-store-api' });

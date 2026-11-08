@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CircleHelp, LogOut, Pin, PinOff, X } from "lucide-react";
+import { LogOut, Pin, PinOff, X } from "lucide-react";
 import { SIDEBAR_SECTIONS } from "../config/navigation";
 
 export const SIDEBAR_COLLAPSED = 72;
@@ -26,7 +26,6 @@ export default function Sidebar({
   onPinChange = () => {},
   mobileOpen = false,
   onMobileClose = () => {},
-  onHelp = () => {},
   onLogout = () => {},
 }) {
   const [hovered, setHovered] = useState(false);
@@ -58,7 +57,6 @@ export default function Sidebar({
     activeId,
     pinned,
     onPinChange,
-    onHelp,
     onLogout,
   };
 
@@ -148,16 +146,16 @@ function Panel({
       {/* Brand */}
       <div className="flex h-12 shrink-0 items-center">
         <span className="grid h-12 w-12 shrink-0 place-items-center">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[#F2643F] to-[#D9341B] text-lg font-bold text-white shadow-md shadow-[#E8472B]/30">
-            V
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-700 text-lg font-bold text-white shadow-md shadow-teal-900/20">
+            J
           </span>
         </span>
         <div className={`min-w-0 flex-1 leading-tight ${reveal(expanded)}`}>
           <p className="text-[15px] font-semibold tracking-tight text-neutral-950 dark:text-white">
-            Vertix
+            Jewelry House
           </p>
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            Finance workspace
+            Store administration
           </p>
         </div>
         {onClose && (
@@ -198,12 +196,6 @@ function Panel({
 
       {/* Footer */}
       <div className="mt-2 shrink-0 space-y-1 border-t border-neutral-200/80 pt-3 dark:border-white/10">
-        <FooterItem
-          icon={CircleHelp}
-          label="Help & support"
-          expanded={expanded}
-          onClick={onHelp}
-        />
         {showPin && (
           <FooterItem
             icon={pinned ? PinOff : Pin}
@@ -253,7 +245,7 @@ function NavItem({ item, active, expanded, onClick }) {
       aria-label={item.label}
       aria-current={active ? "page" : undefined}
       title={expanded ? undefined : item.label}
-      className={`group/item relative flex h-12 w-full items-center rounded-2xl text-sm font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#E8472B]/60 ${
+      className={`group/item relative flex h-12 w-full items-center rounded-2xl text-sm font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-teal-600/60 ${
         active
           ? "bg-neutral-950 text-white shadow-lg shadow-black/10 dark:bg-white dark:text-neutral-950"
           : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
@@ -262,7 +254,7 @@ function NavItem({ item, active, expanded, onClick }) {
       <span className="relative grid h-12 w-12 shrink-0 place-items-center">
         <Icon className="h-[19px] w-[19px] transition-transform duration-200 group-hover/item:scale-110" />
         {item.badge && !expanded && (
-          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#E8472B] ring-2 ring-white dark:ring-[#141416]" />
+          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-teal-600 ring-2 ring-white dark:ring-[#141416]" />
         )}
       </span>
       <span className={`flex-1 truncate text-left ${reveal(expanded)}`}>
@@ -270,7 +262,7 @@ function NavItem({ item, active, expanded, onClick }) {
       </span>
       {item.badge && (
         <span
-          className={`mr-3 grid h-5 min-w-5 place-items-center rounded-full bg-[#E8472B] px-1.5 text-[11px] font-semibold text-white ${reveal(
+          className={`mr-3 grid h-5 min-w-5 place-items-center rounded-full bg-teal-600 px-1.5 text-[11px] font-semibold text-white ${reveal(
             expanded
           )}`}
         >
@@ -288,7 +280,7 @@ function FooterItem({ icon: Icon, label, expanded, onClick, danger = false }) {
       onClick={onClick}
       aria-label={label}
       title={expanded ? undefined : label}
-      className={`flex h-11 w-full items-center rounded-2xl text-sm font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#E8472B]/60 ${
+      className={`flex h-11 w-full items-center rounded-2xl text-sm font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-teal-600/60 ${
         danger
           ? "text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:text-neutral-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
           : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"

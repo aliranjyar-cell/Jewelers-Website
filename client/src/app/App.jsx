@@ -1,6 +1,9 @@
 import { Link, Navigate, Route, Routes } from 'react-router';
 import AdminLoginPage from '../features/admin/AdminLoginPage.jsx';
 import AdminLayout from '../features/admin/AdminLayout.jsx';
+import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
+import MetalRatesPage from '../features/admin/MetalRatesPage.jsx';
+
 
 function StoreHome() {
   return (
@@ -28,8 +31,24 @@ function StoreHome() {
   );
 }
 
+function AdminComingSoon({ title }) {
+  return (
+    <section className="rounded-3xl bg-white p-8 ring-1 ring-black/5 dark:bg-[#141416] dark:ring-white/10">
+      <h1 className="text-2xl font-semibold text-neutral-950 dark:text-white">{title}</h1>
+      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+        This area is part of the implementation roadmap.
+      </p>
+    </section>
+  );
+}
+
 function ComingSoon({ title }) {
-  return <main className="p-10"><Link to="/" className="underline">Home</Link><h1 className="mt-8 text-3xl">{title}</h1><p className="mt-3 text-stone-600">This area is part of the implementation roadmap.</p></main>;
+  return (
+    <main className="min-h-screen bg-stone-50 p-8 text-stone-900 dark:bg-[#0A0A0B] dark:text-white">
+      <h1 className="text-2xl font-semibold">{title}</h1>
+      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">This area is part of the implementation roadmap.</p>
+    </main>
+  );
 }
 
 export default function App() {
@@ -38,9 +57,22 @@ export default function App() {
       <Route path="/" element={<StoreHome />} />
       <Route path="/shop" element={<ComingSoon title="Shop" />} />
       <Route path="/custom-order" element={<ComingSoon title="Custom order" />} />
+
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin" element={<AdminLayout />} />
-      <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+
+      {/* Every page inside here gets the sidebar + header and is protected by the layout */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="orders" element={<AdminComingSoon title="Orders" />} />
+        <Route path="orders/:orderId" element={<AdminComingSoon title="Order details" />} />
+        <Route path="products" element={<AdminComingSoon title="Products" />} />
+        <Route path="products/:productId/edit" element={<AdminComingSoon title="Edit product" />} />
+        <Route path="metal-rates" element={<MetalRatesPage />} />
+        <Route path="custom-requests" element={<AdminComingSoon title="Custom requests" />} />
+        <Route path="custom-requests/:requestId" element={<AdminComingSoon title="Custom request details" />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
+
       <Route path="*" element={<ComingSoon title="Page not found" />} />
     </Routes>
   );
