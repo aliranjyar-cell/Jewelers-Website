@@ -3,6 +3,9 @@ import AdminLoginPage from '../features/admin/AdminLoginPage.jsx';
 import AdminLayout from '../features/admin/AdminLayout.jsx';
 import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
 import MetalRatesPage from '../features/admin/MetalRatesPage.jsx';
+import ProductsPage from '../features/admin/ProductsPage.jsx';
+import ProductFormPage from '../features/admin/ProductFormPage.jsx';
+import StoreProductPage from '../features/catalog/pages/StoreProductPage.jsx';
 
 
 function StoreHome() {
@@ -56,6 +59,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<StoreHome />} />
       <Route path="/shop" element={<ComingSoon title="Shop" />} />
+      <Route path="/shop/:slug" element={<StoreProductPage />} />
       <Route path="/custom-order" element={<ComingSoon title="Custom order" />} />
 
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -65,8 +69,9 @@ export default function App() {
         <Route index element={<AdminDashboardPage />} />
         <Route path="orders" element={<AdminComingSoon title="Orders" />} />
         <Route path="orders/:orderId" element={<AdminComingSoon title="Order details" />} />
-        <Route path="products" element={<AdminComingSoon title="Products" />} />
-        <Route path="products/:productId/edit" element={<AdminComingSoon title="Edit product" />} />
+        <Route path="products" element={<ProductsPage />} />
+        <Route path="products/new" element={<ProductFormPage />} />
+        <Route path="products/:productId/edit" element={<ProductFormPage />} />
         <Route path="metal-rates" element={<MetalRatesPage />} />
         <Route path="custom-requests" element={<AdminComingSoon title="Custom requests" />} />
         <Route path="custom-requests/:requestId" element={<AdminComingSoon title="Custom request details" />} />

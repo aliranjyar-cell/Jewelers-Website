@@ -17,3 +17,30 @@ export const adminAuth = {
   current: () => authRequest('/me'),
   logout: (csrfToken) => authRequest('/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } }),
 };
+
+const PRODUCT_URL = '/api/admin/products';
+
+async function productRequest(path = '', options = {}) {
+  const response = await fetch(`${PRODUCT_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || 'The product request could not be completed.');
+    error.status = response.status;
+    error.details = result.details || [];
+    throw error;
+  }
+  return result;
+}
+
+export const adminProducts = {
+  list: (params = {}) => productRequest(`?${new URLSearchParams(params)}`),
+  categories: () => productRequest('/categories'),
+  get: (id) => productRequest(`/${encodeURIComponent(id)}`),
+  create: (product) => productRequest('', { method: 'POST', body: JSON.stringify(product) }),
+  update: (id, product) => productRequest(`/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(product) }),
+  previewPrice: (details) => productRequest('/pricing-preview', { method: 'POST', body: JSON.stringify(details) }),
+};

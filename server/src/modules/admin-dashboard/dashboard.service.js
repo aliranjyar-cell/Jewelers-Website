@@ -230,9 +230,9 @@ async function getStock() {
   const [countsResult, outResult, lowResult, draftResult, incompleteResult] = await Promise.all([
     pool.execute(
       `SELECT
-         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.stock_quantity = 0) AS out_of_stock,
-         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.stock_quantity BETWEEN 1 AND ?) AS low_stock,
-         (SELECT COUNT(*) FROM products WHERE is_published = 0) AS draft,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity = 0) AS out_of_stock,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity BETWEEN 1 AND ?) AS low_stock,
+         (SELECT COUNT(*) FROM products WHERE status = 'draft') AS draft,
          (SELECT COUNT(*) FROM products p WHERE ${incompleteCondition}) AS incomplete`,
       [STOCK_THRESHOLD],
     ),
@@ -240,20 +240,20 @@ async function getStock() {
       `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, v.stock_quantity AS stock
        FROM product_variants v JOIN products p ON p.id = v.product_id
        LEFT JOIN product_images pvi ON pvi.product_id = p.id AND pvi.sort_order = (SELECT MIN(pi.sort_order) FROM product_images pi WHERE pi.product_id = p.id)
-       WHERE v.is_available = 1 AND v.stock_quantity = 0 ORDER BY v.updated_at DESC LIMIT 5`,
+       WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity = 0 ORDER BY v.updated_at DESC LIMIT 5`,
     ),
     pool.execute(
       `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, v.stock_quantity AS stock
        FROM product_variants v JOIN products p ON p.id = v.product_id
        LEFT JOIN product_images pvi ON pvi.product_id = p.id AND pvi.sort_order = (SELECT MIN(pi.sort_order) FROM product_images pi WHERE pi.product_id = p.id)
-       WHERE v.is_available = 1 AND v.stock_quantity BETWEEN 1 AND ? ORDER BY v.stock_quantity ASC, v.updated_at DESC LIMIT 5`,
+       WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity BETWEEN 1 AND ? ORDER BY v.stock_quantity ASC, v.updated_at DESC LIMIT 5`,
       [STOCK_THRESHOLD],
     ),
     pool.execute(
       `SELECT p.id, p.name, pvi.image_url AS image
        FROM products p
        LEFT JOIN product_images pvi ON pvi.product_id = p.id AND pvi.sort_order = (SELECT MIN(pi.sort_order) FROM product_images pi WHERE pi.product_id = p.id)
-       WHERE p.is_published = 0 ORDER BY p.updated_at DESC LIMIT 5`,
+       WHERE p.status = 'draft' ORDER BY p.updated_at DESC LIMIT 5`,
     ),
     pool.execute(
       `SELECT p.id, p.name, pvi.image_url AS image, p.product_mode, p.metal_type, p.purity, p.description, p.category_id,
