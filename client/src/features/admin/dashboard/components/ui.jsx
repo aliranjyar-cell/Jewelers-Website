@@ -236,6 +236,29 @@ export function EmptyState({ icon: Icon, title, description, action, tone = "neu
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Loader                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export function Loader({ size = "w-8 h-8", className = "", message }) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center gap-3 ${className}`}
+      role="status"
+      aria-label={message || "Loading"}
+    >
+      <div
+        className={`${size} rounded-full border-3 border-neutral-200 border-t-teal-600 dark:border-neutral-800 dark:border-t-teal-400 animate-spin motion-reduce:animate-none`}
+      ></div>
+      {message && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ErrorBanner({ message, onRetry, className = "" }) {
   return (
     <div

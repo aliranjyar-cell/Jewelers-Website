@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import { adminAuth } from "../../lib/api.js";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
+import { Loader } from "./dashboard/components/ui.jsx";
 import useTheme from "./hooks/useTheme";
 import { ADMIN_PAGES, NAV_ROUTES } from "./config/navigation";
 
@@ -78,8 +79,8 @@ export default function AdminLayout() {
 
   if (auth.loading) {
     return (
-      <main className="grid h-screen place-items-center bg-[#F4F3F5] text-sm text-neutral-500 dark:bg-[#0A0A0B] dark:text-neutral-400">
-        Checking administrator session…
+      <main className="grid h-screen place-items-center bg-[#F4F3F5] dark:bg-[#0A0A0B]">
+        <Loader message="Checking administrator session…" />
       </main>
     );
   }
