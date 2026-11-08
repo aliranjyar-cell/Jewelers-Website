@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router';
 import { adminAuth } from '../../lib/api.js';
 
+
 export default function AdminHomePage() {
   const [state, setState] = useState({ loading: true, user: null, csrfToken: null, error: '' });
   const [logoutError, setLogoutError] = useState('');
@@ -28,8 +29,8 @@ export default function AdminHomePage() {
   if (!state.user) return <Navigate to="/admin/login" replace />;
 
   return (
-    <main className="min-h-screen bg-stone-100 px-6 py-10">
-      <section className="mx-auto max-w-3xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+
+    <section className="mx-auto  max-w-3xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-[#141416]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">Jewelry House</p>
@@ -44,6 +45,6 @@ export default function AdminHomePage() {
           <p className="mt-1 text-sm text-stone-600">This protected page is the sign-in destination. The admin tools will be added here in a later step.</p>
         </div>
       </section>
-    </main>
+
   );
 }

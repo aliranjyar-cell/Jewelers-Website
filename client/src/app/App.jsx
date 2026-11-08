@@ -1,6 +1,6 @@
 import { Link, Navigate, Route, Routes } from 'react-router';
 import AdminLoginPage from '../features/admin/AdminLoginPage.jsx';
-import AdminHomePage from '../features/admin/AdminHomePage.jsx';
+import AdminLayout from '../features/admin/AdminLayout.jsx';
 
 function StoreHome() {
   return (
@@ -39,7 +39,7 @@ export default function App() {
       <Route path="/shop" element={<ComingSoon title="Shop" />} />
       <Route path="/custom-order" element={<ComingSoon title="Custom order" />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin" element={<AdminHomePage />} />
+      <Route path="/admin" element={<AdminLayout />} />
       <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
       <Route path="*" element={<ComingSoon title="Page not found" />} />
     </Routes>
