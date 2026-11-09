@@ -60,7 +60,7 @@ export async function listAdminOrders(filters) {
     pool.execute(`SELECT COUNT(*) AS total FROM orders o JOIN users u ON u.id = o.user_id WHERE ${where}`, values),
     pool.execute(
       `SELECT o.id, o.order_number AS orderNumber, o.created_at AS createdAt, o.updated_at AS updatedAt,
-       o.status, o.payment_status AS paymentStatus, o.total_pkr AS total, o.phone AS recipientPhone,
+       o.status, o.payment_status AS paymentStatus, o.total_pkr AS total, o.delivery_fee_confirmed AS deliveryFeeConfirmed, o.phone AS recipientPhone,
        u.full_name AS customerName, u.email AS email, u.phone AS customerPhone,
        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS itemCount,
        (SELECT pt.provider FROM payment_transactions pt WHERE pt.order_id = o.id ORDER BY pt.updated_at DESC, pt.id DESC LIMIT 1) AS paymentMethod
@@ -68,7 +68,7 @@ export async function listAdminOrders(filters) {
       [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
     ),
   ]);
-  return { items: rows.map((row) => ({ ...row, id: String(row.id), itemCount: Number(row.itemCount), total: Number(row.total) })), total: Number(countRows[0].total), page: filters.page, pageSize: filters.pageSize };
+  return { items: rows.map((row) => ({ ...row, id: String(row.id), itemCount: Number(row.itemCount), total: Number(row.total), deliveryFeeConfirmed: Boolean(row.deliveryFeeConfirmed) })), total: Number(countRows[0].total), page: filters.page, pageSize: filters.pageSize };
 }
 
 export async function getAdminOrder(orderId) {
@@ -115,13 +115,15 @@ export async function setOrderStatus(orderId, input, admin) {
   const reason = boundedText(input.reason, 'Reason', 500, status === 'cancelled');
   const overrideReason = boundedText(input.overrideReason, 'Payment override reason', 500);
   return withTransaction(async (connection) => {
-    const [rows] = await connection.execute('SELECT id, status, payment_status FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
+    const [rows] = await connection.execute('SELECT id, status, payment_status, delivery_fee_confirmed AS deliveryFeeConfirmed FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
     const order = rows[0]; if (!order) fail('Order not found.', 404);
     if (order.status === status) fail('The order already has this status.', 409);
     if (!TRANSITIONS[order.status]?.has(status)) fail(`The order cannot move from ${order.status.replaceAll('_', ' ')} to ${status.replaceAll('_', ' ')}.`, 409);
+    if (status === 'delivered' && !order.deliveryFeeConfirmed) fail('Confirm the delivery fee and final total before marking this order delivered.', 409);
     if (status === 'delivered' && order.payment_status !== 'paid' && !overrideReason) fail('Confirm payment first or provide a reason for the unpaid delivery override.', 409);
     if (status === 'confirmed') await reserveOrderInventoryInTransaction(connection, order.id, admin.id);
     if (status === 'shipped') {
+      if (!order.deliveryFeeConfirmed) fail('Confirm the delivery fee and final total before shipping this order.', 409);
       if (order.payment_status === 'failed') fail('Resolve the failed payment before shipping this order.', 409);
       const [unreserved] = await connection.execute(
         `SELECT COUNT(*) AS total FROM order_items oi JOIN product_variants v ON v.id = oi.variant_id
@@ -145,11 +147,12 @@ export async function setOrderPayment(orderId, input, admin) {
   const reference = boundedText(input.reference, 'Transaction reference', 160);
   const note = boundedText(input.note, 'Note', 500);
   return withTransaction(async (connection) => {
-    const [rows] = await connection.execute('SELECT id, status, payment_status, total_pkr FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
+    const [rows] = await connection.execute('SELECT id, status, payment_status, total_pkr, delivery_fee_confirmed AS deliveryFeeConfirmed FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
     const order = rows[0]; if (!order) fail('Order not found.', 404);
     if (order.payment_status === 'refunded' && status !== 'refunded') fail('A refunded payment cannot be changed.', 409);
     if (order.status === 'refunded' && status !== 'refunded') fail('A refunded order can only have a refunded payment status.', 409);
     if (order.payment_status === 'paid' && !['paid', 'refunded'].includes(status)) fail('A received payment cannot be changed to an unpaid or failed state. Record a refund if money was returned.', 409);
+    if (status === 'paid' && !order.deliveryFeeConfirmed) fail('Confirm the delivery fee and final total before recording payment.', 409);
     if (status === 'paid' && ['confirmed', 'processing'].includes(order.status)) await reserveOrderInventoryInTransaction(connection, order.id, admin.id);
     await connection.execute('UPDATE orders SET payment_status = ? WHERE id = ?', [status, order.id]);
     const transactionStatus = ({ paid: 'succeeded', unpaid: 'initiated' })[status] || status;
@@ -168,6 +171,28 @@ export async function setOrderPayment(orderId, input, admin) {
     if (status === 'failed') await releaseOrderInventoryInTransaction(connection, order.id, admin.id);
     await recordEvent(connection, { orderId: order.id, actorId: admin.id, type: 'payment', fromValue: order.payment_status, toValue: status, note, metadata: { provider, reference } });
     return { id: String(order.id), paymentStatus: status };
+  });
+}
+
+export async function setOrderPricing(orderId, input, admin) {
+  const deliveryFee = Number(input.deliveryFee);
+  if (!Number.isFinite(deliveryFee) || deliveryFee < 0 || deliveryFee > 9999999999.99) fail('Enter a valid delivery fee, including zero if no fee applies.');
+  const roundedFee = Math.round(deliveryFee * 100) / 100;
+  return withTransaction(async (connection) => {
+    const [rows] = await connection.execute(
+      'SELECT id, status, payment_status, subtotal_pkr, discount_pkr, delivery_fee_pkr, delivery_fee_confirmed FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId],
+    );
+    const order = rows[0]; if (!order) fail('Order not found.', 404);
+    if (['shipped', 'delivered', 'cancelled', 'refunded'].includes(order.status) || order.payment_status === 'paid') fail('The final delivery total can no longer be changed for this order.', 409);
+    const total = Math.round((Number(order.subtotal_pkr) - Number(order.discount_pkr) + roundedFee) * 100) / 100;
+    await connection.execute('UPDATE orders SET delivery_fee_pkr = ?, delivery_fee_confirmed = 1, total_pkr = ? WHERE id = ?', [roundedFee, total, order.id]);
+    await recordEvent(connection, {
+      orderId: order.id, actorId: admin.id, type: 'pricing',
+      fromValue: order.delivery_fee_confirmed ? String(order.delivery_fee_pkr) : 'unconfirmed',
+      toValue: String(roundedFee), note: `Final order total confirmed: PKR ${total.toFixed(2)}.`,
+      metadata: { deliveryFee: roundedFee, total },
+    });
+    return { id: String(order.id), deliveryFee: roundedFee, total, deliveryFeeConfirmed: true };
   });
 }
 

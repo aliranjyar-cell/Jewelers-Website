@@ -95,6 +95,7 @@ export const adminOrders = {
   get: (id) => orderRequest(`/${encodeURIComponent(id)}`),
   updateStatus: (id, payload) => orderRequest(`/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify(payload) }),
   updatePayment: (id, payload) => orderRequest(`/${encodeURIComponent(id)}/payment`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  updatePricing: (id, payload) => orderRequest(`/${encodeURIComponent(id)}/pricing`, { method: 'PATCH', body: JSON.stringify(payload) }),
   updateFulfillment: (id, payload) => orderRequest(`/${encodeURIComponent(id)}/fulfillment`, { method: 'PATCH', body: JSON.stringify(payload) }),
 };
 
@@ -138,6 +139,28 @@ export const adminCustomRequests = {
   list: (params = {}) => customRequestAdminRequest(`?${new URLSearchParams(params)}`),
   get: (id) => customRequestAdminRequest(`/${encodeURIComponent(id)}`),
   update: (id, payload) => customRequestAdminRequest(`/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+};
+
+async function publicOrderRequest(path, payload) {
+  const response = await fetch(`/api/orders${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || 'Your order could not be submitted.');
+    error.status = response.status;
+    error.details = result.details || [];
+    error.currentQuote = result.currentQuote || null;
+    throw error;
+  }
+  return result;
+}
+
+export const publicOrders = {
+  preview: (payload) => publicOrderRequest('/preview', payload),
+  place: (payload) => publicOrderRequest('', payload),
 };
 
 const PUBLIC_PRODUCT_URL = '/api/products';

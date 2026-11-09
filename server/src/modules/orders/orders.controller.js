@@ -1,4 +1,4 @@
-import { getAdminOrder, listAdminOrders, saveFulfillment, setOrderPayment, setOrderStatus } from './orders.service.js';
+import { getAdminOrder, listAdminOrders, saveFulfillment, setOrderPayment, setOrderPricing, setOrderStatus } from './orders.service.js';
 
 function asyncHandler(handler) {
   return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
@@ -31,6 +31,10 @@ export const updateOrderStatus = asyncHandler(async (request, response) => {
 
 export const updateOrderPayment = asyncHandler(async (request, response) => {
   response.json(await setOrderPayment(request.params.orderId, request.body || {}, request.admin));
+});
+
+export const updateOrderPricing = asyncHandler(async (request, response) => {
+  response.json(await setOrderPricing(request.params.orderId, request.body || {}, request.admin));
 });
 
 export const updateFulfillment = asyncHandler(async (request, response) => {

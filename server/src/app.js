@@ -12,6 +12,7 @@ import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
 import { orderRoutes } from './modules/orders/orders.routes.js';
 import { metalRateRoutes } from './modules/metal-rates/metalRates.routes.js';
 import { customOrderRoutes } from './modules/custom-orders/customOrders.routes.js';
+import { publicOrderRoutes } from './modules/orders/publicOrders.routes.js';
 
 export const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/admin/orders', orderRoutes);
 app.use('/api/admin/metal-rates', metalRateRoutes);
 app.use('/api/admin/custom-requests', customOrderRoutes);
+app.use('/api/orders', publicOrderRoutes);
 app.use('/api/products', publicProductRoutes);
 
 app.get('/api/health', (_request, response) => {
