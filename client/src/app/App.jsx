@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, useParams } from 'react-router';
+import { useStoreBrand } from '../contexts/StoreBrandContext.jsx';
 
 const AdminLoginPage = lazy(() => import('../features/admin/AdminLoginPage.jsx'));
 const AdminLayout = lazy(() => import('../features/admin/AdminLayout.jsx'));
@@ -16,6 +17,7 @@ const OrderDetailPage = lazy(() => import('../features/admin/OrderDetailPage.jsx
 const CustomRequestsPage = lazy(() => import('../features/admin/CustomRequestsPage.jsx'));
 const CustomRequestDetailPage = lazy(() => import('../features/admin/CustomRequestDetailPage.jsx'));
 const CampaignsPage = lazy(() => import('../features/admin/CampaignsPage.jsx'));
+const StoreSettingsPage = lazy(() => import('../features/admin/StoreSettingsPage.jsx'));
 const CartPage = lazy(() => import('../features/cart/CartPage.jsx'));
 const CheckoutPage = lazy(() => import('../features/checkout/CheckoutPage.jsx'));
 const OrderConfirmationPage = lazy(() => import('../features/checkout/OrderConfirmationPage.jsx'));
@@ -32,7 +34,8 @@ function LegacyProductRedirect() {
 }
 
 function StoreInfoPage({ title, description, note }) {
-  return <main className="grid min-h-[70vh] place-items-center px-5 py-16 text-center"><div className="max-w-xl"><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">Zareen Jewellers</p><h1 className="mt-4 font-serif text-4xl sm:text-5xl">{title}</h1><p className="mt-5 text-sm leading-7 text-stone-600">{description}</p>{note && <p className="mt-5 border border-amber-200 bg-amber-50 px-5 py-4 text-left text-xs leading-6 text-amber-950">{note}</p>}<Link to="/shop" className="mt-7 inline-flex rounded-full bg-stone-900 px-6 py-3 text-sm text-white hover:bg-stone-700">Browse the collection</Link></div></main>;
+  const { storeName } = useStoreBrand();
+  return <main className="grid min-h-[70vh] place-items-center px-5 py-16 text-center"><div className="max-w-xl"><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">{storeName}</p><h1 className="mt-4 font-serif text-4xl sm:text-5xl">{title}</h1><p className="mt-5 text-sm leading-7 text-stone-600">{description}</p>{note && <p className="mt-5 border border-amber-200 bg-amber-50 px-5 py-4 text-left text-xs leading-6 text-amber-950">{note}</p>}<Link to="/shop" className="mt-7 inline-flex rounded-full bg-stone-900 px-6 py-3 text-sm text-white hover:bg-stone-700">Browse the collection</Link></div></main>;
 }
 
 function ComingSoon({ title }) {
@@ -62,8 +65,8 @@ export default function App() {
         <Route path="product/:slug" element={<LegacyProductRedirect />} />
         <Route path="custom-order" element={<CustomOrderPage />} />
         <Route path="gold-rate" element={<StoreInfoPage title="Today’s gold rate" description="Gold prices change throughout the day. Contact our team for the latest rate before placing an order or visiting the showroom." />} />
-        <Route path="contact" element={<StoreInfoPage title="Talk with our team" description="Contact Zareen Jewellers in Quetta for product questions, delivery coverage and timelines, accepted payment methods, or return and exchange terms. We’ll confirm the details for your order before you decide." />} />
-        <Route path="about" element={<StoreInfoPage title="Made with care in Quetta" description="Zareen Jewellers brings together careful craftsmanship, considered design, and personal service for every piece." />} />
+        <Route path="contact" element={<StoreInfoPage title="Talk with our team" description="For product questions, delivery coverage and timelines, accepted payment methods, or return and exchange terms, send a request and the store will confirm details before you decide." />} />
+        <Route path="about" element={<StoreInfoPage title="Made with care in Quetta" description="Explore the collection, review product and pricing details, or share an idea for a custom design." />} />
         <Route path="gold" element={<Navigate to="/shop" replace />} />
         <Route path="bridal" element={<Navigate to="/shop" replace />} />
         <Route path="bullion" element={<Navigate to="/shop" replace />} />
@@ -83,6 +86,7 @@ export default function App() {
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="metal-rates" element={<MetalRatesPage />} />
         <Route path="campaigns" element={<CampaignsPage />} />
+        <Route path="settings" element={<StoreSettingsPage />} />
         <Route path="custom-requests" element={<CustomRequestsPage />} />
         <Route path="custom-requests/:requestId" element={<CustomRequestDetailPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

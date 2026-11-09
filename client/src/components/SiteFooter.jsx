@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { ArrowUpRight, MapPin } from 'lucide-react';
 import Logo from '../features/catalog/layout/Logo.jsx';
+import { useStoreBrand } from '../contexts/StoreBrandContext.jsx';
 
 const year = new Date().getFullYear();
 
@@ -13,6 +14,7 @@ const exploreLinks = [
 ];
 
 export default function SiteFooter() {
+  const { storeName } = useStoreBrand();
   return (
     <footer className="relative overflow-hidden border-t border-[#c9a24f]/25 bg-[#17140f] text-stone-300">
       <div aria-hidden="true" className="pointer-events-none absolute -right-28 -top-36 h-80 w-80 rounded-full bg-[#c9a24f]/10 blur-[100px]" />
@@ -44,10 +46,10 @@ export default function SiteFooter() {
 
         </div>
         <div className="mt-12 tracking-[20px]  flex flex-col items-center justify-center gap-3 text-[10px] text-stone-400 sm:flex-row">
-          <h1 className=' md:text-[100px] text-6xl'>ZARREN JEWELERS</h1>
+          <h1 className="max-w-full break-words text-center text-5xl leading-none tracking-[0.12em] sm:text-7xl md:text-[clamp(3rem,8vw,100px)]">{storeName.toLocaleUpperCase()}</h1>
         </div>
         <div className="flex flex-col gap-3 pt-5 text-[11px] text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {year} Zareen Jewellers. Quetta, Pakistan.</p>
+          <p>© {year} {storeName}. Quetta, Pakistan.</p>
           <a href={`tel:+93782358092`} className="text-[15px] text-stone-500 hover:text-[#e3b968]">Developed by PoiaFlow</a>
         </div>
       </div>

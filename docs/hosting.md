@@ -5,7 +5,7 @@ The application can run as a single Node.js service: build the React SPA, let Ex
 ## Before launch
 
 1. Choose a Node.js Active or Maintenance LTS runtime and a managed MySQL database reachable from the app. XAMPP is for local development; do not expose its development MySQL instance to the public internet.
-2. Create a production database and a dedicated least-privilege database user. Import `database/schema.sql`, then apply every SQL migration in numeric order, including both `002` migrations and campaign migrations `008` and `009`.
+2. Create a production database and a dedicated least-privilege database user. Import `database/schema.sql`, then apply every SQL migration in numeric order, including both `002` migrations, campaign migrations `008` and `009`, and store branding migration `010`.
 3. Configure the service environment: `NODE_ENV=production`, `PORT` as required by the host, `CLIENT_ORIGIN=https://your-domain`, production `DB_*` values, and a private Base64-encoded 32-byte `AUTH_ENCRYPTION_KEY`.
 4. Configure HTTPS and the reverse proxy. Set `TRUST_PROXY_HOPS` only to the actual trusted proxy count so secure session cookies and client IP handling work correctly.
 5. Set `UPLOADS_DIR` to a persistent mounted volume. Product photos are written to its `products` subfolder and campaign uploads to `campaigns`. Local ephemeral disk is not suitable for customer-facing product imagery.

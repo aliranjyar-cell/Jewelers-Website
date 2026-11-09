@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ArrowRight, Gem, ImageOff, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { publicProducts } from '../../../lib/api.js';
+import { useStoreBrand } from '../../../contexts/StoreBrandContext.jsx';
 
 const pkr = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 });
 const money = (amount) => `PKR ${pkr.format(Number(amount || 0))}`;
@@ -9,6 +10,7 @@ const absoluteImage = (url) => url?.startsWith('http') ? url : `${window.locatio
 
 export default function ProductPage() {
   const { slug } = useParams();
+  const { storeName } = useStoreBrand();
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState('');
   const [selectedImage, setSelectedImage] = useState(0);
@@ -38,7 +40,7 @@ export default function ProductPage() {
 
   const variant = product?.variants?.find((row) => String(row.id) === selectedVariant) || product?.variants?.[0];
   const description = product?.seoDescription || product?.description || '';
-  const title = product?.seoTitle || (product ? `${product.name} | Jewelry House` : 'Jewelry House');
+  const title = product?.seoTitle ? `${product.seoTitle} | ${storeName}` : product ? `${product.name} | ${storeName}` : storeName;
   const canonical = `${window.location.origin}/shop/${encodeURIComponent(slug)}`;
 
   const prices = useMemo(() => {
@@ -68,6 +70,7 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen bg-stone-50 text-stone-900">
+      <title>{title}</title>
       <section className="mx-auto max-w-7xl px-6 py-8 lg:py-16">
         <div className="lg:grid lg:grid-cols-2 lg:gap-12">
           <div className="space-y-4">
@@ -120,7 +123,7 @@ export default function ProductPage() {
           </div>
         </div>
       </section>
-      <footer className="border-t border-stone-200 px-6 py-6 text-center text-xs text-stone-500">Quetta, Pakistan · Jewelry Store</footer>
+      <footer className="border-t border-stone-200 px-6 py-6 text-center text-xs text-stone-500">Quetta, Pakistan · {storeName}</footer>
     </main>
   );
 }

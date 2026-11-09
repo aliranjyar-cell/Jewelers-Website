@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, Moon, Search, Sun } from "lucide-react";
 import useClickOutside from "../hooks/useClickOutside";
 import { SEARCH_ITEMS } from "../config/navigation";
+import { useStoreBrand } from '../../../contexts/StoreBrandContext.jsx';
 
 function initials(name = "") {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "A";
@@ -15,6 +16,7 @@ export default function Header({
   onToggleTheme = () => {},
   user = {},
 }) {
+  const { storeName } = useStoreBrand();
   return (
     <header className="relative z-30 flex h-[76px] shrink-0 items-center gap-3 px-4 sm:px-6">
       <button
@@ -27,7 +29,7 @@ export default function Header({
       </button>
 
       <div className="hidden min-w-[155px] xl:block">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400 dark:text-neutral-500">Jewelry House</p>
+        <p className="max-w-full truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400 dark:text-neutral-500">{storeName}</p>
         <p className="mt-0.5 truncate text-sm font-semibold text-neutral-900 dark:text-white">{currentPage}</p>
       </div>
 

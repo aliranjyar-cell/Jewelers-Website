@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LogOut, Pin, PinOff, X } from "lucide-react";
 import { SIDEBAR_SECTIONS } from "../config/navigation";
+import { useStoreBrand } from '../../../contexts/StoreBrandContext.jsx';
 
 export const SIDEBAR_COLLAPSED = 72;
 export const SIDEBAR_EXPANDED = 264;
@@ -28,6 +29,7 @@ export default function Sidebar({
   onMobileClose = () => {},
   onLogout = () => {},
 }) {
+  const { storeName } = useStoreBrand();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const timer = useRef(null);
@@ -87,6 +89,7 @@ export default function Sidebar({
         >
           <Panel
             {...panelProps}
+            storeName={storeName}
             expanded={expanded}
             onNavigate={onNavigate}
           />
@@ -114,6 +117,7 @@ export default function Sidebar({
         >
           <Panel
             {...panelProps}
+            storeName={storeName}
             expanded
             showPin={false}
             onClose={onMobileClose}
@@ -140,6 +144,7 @@ function Panel({
   onLogout,
   onClose,
   showPin = true,
+  storeName = '',
 }) {
   return (
     <div className="flex h-full w-full flex-col p-3">
@@ -147,12 +152,12 @@ function Panel({
       <div className="flex h-12 shrink-0 items-center">
         <span className="grid h-12 w-12 shrink-0 place-items-center">
           <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-700 text-lg font-bold text-white shadow-md shadow-teal-900/20">
-            J
+            {storeName.trim().charAt(0).toLocaleUpperCase() || 'S'}
           </span>
         </span>
         <div className={`min-w-0 flex-1 leading-tight ${reveal(expanded)}`}>
-          <p className="text-[15px] font-semibold tracking-tight text-neutral-950 dark:text-white">
-            Jewelry House
+          <p className="truncate text-[15px] font-semibold tracking-tight text-neutral-950 dark:text-white">
+            {storeName}
           </p>
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
             Store administration

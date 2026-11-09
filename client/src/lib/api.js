@@ -241,3 +241,21 @@ export async function getPublicCampaign(placement) {
   try { return await campaignRequest(`/api/campaigns/${encodeURIComponent(placement)}`, { credentials: 'omit' }); }
   catch { return null; }
 }
+
+export async function getPublicStoreName() {
+  const response = await fetch('/api/store-settings', { headers: { Accept: 'application/json' } });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Store settings could not be loaded.');
+  return result.storeName;
+}
+
+export async function updateAdminStoreName(storeName) {
+  const response = await fetch('/api/admin/settings/store', {
+    method: 'PUT', credentials: 'include',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ storeName }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Website name could not be saved.');
+  return result.storeName;
+}

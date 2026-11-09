@@ -27,3 +27,5 @@ Do not use the XAMPP root account or local settings for a public production depl
 ## Advertising campaigns
 
 After applying `database/migrations/008_campaigns.sql` and `009_campaign_hero_style.sql`, an administrator can create hero, announcement, and homepage feature campaigns from `/admin/campaigns`. Hero campaigns support alignment and text color. Upload artwork in the admin panel; use persistent media storage for hosted environments. Drafts and scheduled campaigns do not appear publicly until their active period.
+
+After applying `database/migrations/010_store_brand_settings.sql`, an administrator can change the public website name at `/admin/settings`. The shared value is used across the storefront, admin shell, large footer wordmark, and browser title.

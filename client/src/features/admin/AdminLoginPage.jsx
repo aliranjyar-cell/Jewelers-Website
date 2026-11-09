@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { adminAuth } from '../../lib/api.js';
+import { useStoreBrand } from '../../contexts/StoreBrandContext.jsx';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
+  const { storeName } = useStoreBrand();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -25,7 +27,7 @@ export default function AdminLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-stone-100 px-5 py-12">
       <section className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        <Link to="/" className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-800">Jewelry House</Link>
+        <Link to="/" className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-800">{storeName}</Link>
         <h1 className="mt-6 text-3xl font-semibold text-stone-900">Admin sign in</h1>
         <p className="mt-2 text-sm text-stone-600">Use your administrator account and authenticator code.</p>
         <form className="mt-8 space-y-5" onSubmit={submit}>

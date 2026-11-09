@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router";
+import { useStoreBrand } from '../../../../contexts/StoreBrandContext.jsx';
 
 const collections = [
   {
@@ -30,6 +31,7 @@ const collections = [
 ];
 
 export default function ZareenShowcase() {
+  const { storeName } = useStoreBrand();
   return (
     <section className="zareen-showcase relative isolate overflow-hidden bg-[#F3EEE5] px-5 py-24 sm:px-8 lg:px-16 lg:py-32">
 
@@ -177,7 +179,7 @@ export default function ZareenShowcase() {
         <div className="showcase-heading mb-14 text-center lg:mb-20">
 
           <span className="mb-5 block text-[10px] font-semibold uppercase tracking-[.45em] text-[#A78A53]">
-            Discover the ZAREEN World
+            Discover the {storeName} World
           </span>
 
           <h2 className="font-serif text-4xl leading-tight text-[#30291F] sm:text-5xl lg:text-6xl">
@@ -204,7 +206,7 @@ export default function ZareenShowcase() {
 
             <img
               src="https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1800&q=90"
-              alt="Elegant ZAREEN jewelry collection"
+              alt={`Elegant ${storeName} jewellery collection`}
               className="main-jewelry-image h-full w-full object-cover object-center"
             />
 
@@ -242,7 +244,7 @@ export default function ZareenShowcase() {
 
             {/* Image corner decoration */}
             <div className="absolute right-7 top-7 hidden border border-white/40 px-5 py-3 text-[9px] uppercase tracking-[.3em] text-white sm:block">
-              ZAREEN · EST. ELEGANCE
+              {storeName.toLocaleUpperCase()} · EST. ELEGANCE
             </div>
 
           </div>

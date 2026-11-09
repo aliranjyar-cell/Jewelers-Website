@@ -18,6 +18,7 @@ import { publicCustomOrderRoutes } from './modules/custom-orders/publicCustomOrd
 import { adminCampaignRoutes, publicCampaignRoutes } from './modules/campaigns/campaigns.routes.js';
 import { pool } from './config/database.js';
 import { getProductSitemap } from './modules/products/products.controller.js';
+import { adminStoreSettingsRoutes, publicStoreSettingsRoutes } from './modules/store-settings/storeSettings.routes.js';
 
 export const app = express();
 
@@ -35,10 +36,12 @@ app.use('/uploads', express.static(uploadsDirectory, {
 }));
 app.use('/api/admin/products', productRoutes);
 app.use('/api/admin/campaigns', adminCampaignRoutes);
+app.use('/api/admin/settings', adminStoreSettingsRoutes);
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/customer/auth', customerAuthRoutes);
+app.use('/api/store-settings', publicStoreSettingsRoutes);
 app.use('/api/custom-requests', publicCustomOrderRoutes);
 app.use('/api/campaigns', publicCampaignRoutes);
 app.use('/api/admin/dashboard', dashboardRoutes);

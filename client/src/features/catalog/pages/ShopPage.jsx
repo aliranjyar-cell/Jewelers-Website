@@ -3,10 +3,12 @@ import { Link, useSearchParams } from 'react-router';
 import { ArrowLeft, ArrowRight, LoaderCircle, Search } from 'lucide-react';
 import { publicProducts } from '../../../lib/api.js';
 import ProductCard from './components/ProductCard.jsx';
+import { useStoreBrand } from '../../../contexts/StoreBrandContext.jsx';
 
 const PAGE_SIZE = 20;
 
 export default function ShopPage() {
+  const { storeName } = useStoreBrand();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -63,7 +65,7 @@ export default function ShopPage() {
         <Link to="/" className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500 hover:text-stone-900"><ArrowLeft className="h-3.5 w-3.5" /> Home</Link>
         <div className="mt-5 flex flex-col gap-6 border-b border-stone-200 pb-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">Zareen Jewellers</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">{storeName}</p>
             <h1 className="mt-2 font-serif text-4xl font-light sm:text-5xl">{category ? categories.find((item) => item.slug === category)?.name || 'Collection' : 'The collection'}</h1>
             {search && <p className="mt-2 text-sm text-stone-500">Results for “{search}”</p>}
           </div>

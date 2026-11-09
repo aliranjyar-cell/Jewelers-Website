@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ArrowRight, Gem, ImageOff, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../cart/CartContext.jsx';
+import { useStoreBrand } from '../../../contexts/StoreBrandContext.jsx';
 
 const pkr = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 });
 const money = (amount) => `PKR ${pkr.format(Number(amount || 0))}`;
@@ -9,6 +10,7 @@ const absoluteImage = (url) => url?.startsWith('http') ? url : `${window.locatio
 
 export default function StoreProductPage() {
   const { slug } = useParams();
+  const { storeName } = useStoreBrand();
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState('');
   const [selectedImage, setSelectedImage] = useState(0);
@@ -37,7 +39,7 @@ export default function StoreProductPage() {
   const images = Array.isArray(product?.images) ? product.images : [];
   const variant = variants.find((row) => String(row.id) === selectedVariant) || variants[0];
   const description = product?.seoDescription || product?.description || '';
-  const title = product?.seoTitle || (product ? `${product.name} | Jewelry House` : 'Jewelry House');
+  const title = product?.seoTitle ? `${product.seoTitle} | ${storeName}` : product ? `${product.name} | ${storeName}` : storeName;
   const canonical = `${window.location.origin}/shop/${encodeURIComponent(slug)}`;
   const structuredData = useMemo(() => {
     if (!product) return null;
@@ -47,12 +49,12 @@ export default function StoreProductPage() {
     return {
       '@context': 'https://schema.org', '@type': 'Product', name: product.name, description,
       image: productImages.map((image) => absoluteImage(image.url)), sku: variant?.sku,
-      brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+      brand: { '@type': 'Brand', name: product.brand || storeName },
       category: product.category,
       material: [product.metalType, product.purity, product.stoneMaterials, product.finishColor].filter(Boolean).join(', '),
       offers: prices.length ? { '@type': 'AggregateOffer', priceCurrency: 'PKR', lowPrice: Math.min(...prices), highPrice: Math.max(...prices), offerCount: prices.length, availability: productVariants.some((row) => row.availability !== 'unavailable') ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' } : undefined,
     };
-  }, [product, description, variant?.sku]);
+  }, [product, description, variant?.sku, storeName]);
 
   if (loading) return <main className="grid min-h-screen place-items-center bg-stone-50 text-sm text-stone-500"><span><LoaderCircle className="mr-2 inline h-4 w-4 animate-spin" />Loading product…</span></main>;
   if (error || !product) return <main className="grid min-h-screen place-items-center bg-stone-50 px-5 text-center text-stone-900"><div><ImageOff className="mx-auto h-8 w-8 text-stone-400" /><h1 className="mt-4 text-2xl font-semibold">Product unavailable</h1><p className="mt-2 text-sm text-stone-500">{error || 'This product is no longer available.'}</p><Link to="/shop" className="mt-6 inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm text-white"><ArrowLeft className="h-4 w-4" />Back to shop</Link></div></main>;

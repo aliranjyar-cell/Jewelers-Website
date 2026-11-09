@@ -7,6 +7,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router";
+import { useStoreBrand } from '../../../../contexts/StoreBrandContext.jsx';
 
 const features = [
   {
@@ -36,6 +37,7 @@ const features = [
 ];
 
 export default function WhyChooseZareen() {
+  const { storeName } = useStoreBrand();
   return (
     <section className="relative overflow-hidden bg-[#F8F5EF] px-5 py-20 sm:px-8 lg:px-16 lg:py-28">
 
@@ -49,7 +51,7 @@ export default function WhyChooseZareen() {
         <div className="mx-auto mb-16 max-w-2xl text-center">
 
           <span className="mb-4 inline-block text-[11px] font-semibold uppercase tracking-[0.35em] text-[#A8894E]">
-            The ZAREEN Difference
+            The {storeName} Difference
           </span>
 
           <h2 className="font-serif text-3xl leading-tight text-[#29251F] sm:text-4xl lg:text-5xl">
@@ -62,7 +64,7 @@ export default function WhyChooseZareen() {
           <div className="mx-auto my-6 h-px w-16 bg-[#B99A60]" />
 
           <p className="text-sm leading-7 text-[#777168] sm:text-base">
-            More than just jewelry, ZAREEN is about celebrating your
+            More than just jewelry, {storeName} is about celebrating your
             individuality with beautiful designs, thoughtful details,
             and a touch of timeless elegance.
           </p>
