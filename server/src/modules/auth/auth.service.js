@@ -40,7 +40,7 @@ export async function hashPassword(password) {
   return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString('base64url')}$${key.toString('base64url')}`;
 }
 
-async function verifyPassword(password, encoded) {
+export async function verifyPassword(password, encoded) {
   try {
     const [algorithm, n, r, p, salt, expected] = encoded.split('$');
     if (algorithm !== 'scrypt' || Number(n) !== SCRYPT_N || Number(r) !== SCRYPT_R || Number(p) !== SCRYPT_P) return false;
@@ -155,7 +155,7 @@ export async function loginAdmin({ email, password, otp, ipAddress }) {
 export async function loadAdminSession(sessionToken) {
   if (!sessionToken || sessionToken.length > 128) return null;
   const [rows] = await pool.execute(
-    `SELECT s.id AS session_id, s.user_id, u.email, u.full_name, u.role
+    `SELECT s.id AS session_id, s.user_id, u.id AS id, u.email, u.full_name, u.role
      FROM admin_sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ? AND s.expires_at > UTC_TIMESTAMP()
        AND s.last_seen_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? SECOND)

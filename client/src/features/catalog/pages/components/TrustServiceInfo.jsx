@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowUpRight, Clock3, CreditCard, MapPin, RefreshCw, Truck } from 'lucide-react';
+import { ArrowUpRight, CreditCard, MapPin, RefreshCw, Truck } from 'lucide-react';
 
 const serviceDetails = [
   {
@@ -51,8 +51,8 @@ export default function TrustServiceInfo() {
             <span className="grid h-10 w-10 place-items-center rounded-full border border-[#d8c59d] bg-[#fbf9f4] text-[#967540]"><MapPin className="h-[18px] w-[18px]" strokeWidth={1.6} /></span>
             <h3 className="mt-4 font-serif text-lg text-[#30291f]">Contact the store</h3>
             <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-[#746c60]"><MapPin className="mt-1 h-4 w-4 shrink-0 text-[#987541]" />Quetta, Pakistan</p>
-            <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-[#746c60]"><Clock3 className="mt-1 h-4 w-4 shrink-0 text-[#987541]" />Mon–Sat, 11:00 am–8:00 pm</p>
-            <a href="tel:+923128001212" className="mt-4 inline-flex items-center text-sm font-medium text-[#71552f] hover:text-[#30291f]">+92 312 800 1212</a>
+            <p className="mt-2 text-sm leading-6 text-[#746c60]">For an order question or delivery check, sign in to review your order or send a custom request.</p>
+            <Link to="/account/orders" className="mt-4 inline-flex items-center text-sm font-medium text-[#71552f] hover:text-[#30291f]">View your orders</Link>
           </article>
         </div>
       </div>

@@ -3,8 +3,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../../config/database.js';
+import { env } from '../../config/env.js';
 
-const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../uploads/products');
+const uploadDirectory = env.uploadsDirectory
+  ? path.resolve(env.uploadsDirectory, 'products')
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../uploads/products');
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MIME_EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const VALID_STATUS = new Set(['draft', 'published', 'archived']);

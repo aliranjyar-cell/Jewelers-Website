@@ -9,12 +9,6 @@ const COLLECTIONS = [
   { name: "Custom Orders", count: "Made for you", href: "/custom-order", image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80" },
 ];
 
-const STATS = [
-  { value: 35, suffix: "+", label: "Years of trust" },
-  { value: 12000, suffix: "+", label: "Families served" },
-  { value: 100, suffix: "%", label: "Hallmarked gold" },
-];
-
 const SPARKLES = [
   { l: "7%", t: "16%", s: 3, d: 0 },
   { l: "18%", t: "72%", s: 2, d: 1.4 },
@@ -53,43 +47,6 @@ function useInView(threshold = 0.2) {
   }, [threshold]);
 
   return { ref, inView };
-}
-
-function useCountUp(target, start, duration = 1800) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    if (!start) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setValue(target);
-      return;
-    }
-    let raf;
-    let t0;
-    const step = (t) => {
-      if (!t0) t0 = t;
-      const p = Math.min((t - t0) / duration, 1);
-      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [start, target, duration]);
-
-  return value;
-}
-
-function Stat({ value, suffix, label, start }) {
-  const n = useCountUp(value, start);
-  return (
-    <div>
-      <p className="font-serif text-3xl text-[#e3b968] sm:text-4xl">
-        {n.toLocaleString("en-US")}
-        {suffix}
-      </p>
-      <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-neutral-400">{label}</p>
-    </div>
-  );
 }
 
 /* --------------------------- background --------------------------- */
@@ -272,25 +229,23 @@ export default function CraftSection() {
             className="cs-rv mt-4 font-serif text-4xl leading-[1.1] text-[#f7efdc] sm:text-5xl"
             style={{ "--d": "350ms" }}
           >
-            Made slowly, <span className="italic text-[#e3b968]">by hand</span>,
-            <br className="hidden sm:block" /> in our own workshop
+            Jewellery, with <span className="italic text-[#e3b968]">the details</span>
+            <br className="hidden sm:block" /> in view
           </h2>
 
           <p
             className="cs-rv mt-6 max-w-xl text-[15px] leading-relaxed text-neutral-300"
             style={{ "--d": "500ms" }}
           >
-            Every necklace, bangle and ring is shaped, set and polished by our own
-            karigars, then hallmarked and weighed in front of you. No middlemen,
-            no hidden making charges, just gold you can trust.
+            Explore each piece’s materials, weight and pricing method before you order. For rate-based items, the metal value is shown separately from the making charge. Have a design in mind? Send a custom request for the team to review.
           </p>
 
           <div
             className="cs-rv mt-8 grid max-w-lg grid-cols-3 gap-6 border-y border-[#c9a24f]/20 py-6"
             style={{ "--d": "650ms" }}
           >
-            {STATS.map((s) => (
-              <Stat key={s.label} {...s} start={inView} />
+            {[["Weight", "Listed for each rate-priced option"], ["Making charge", "Shown separately in the price"], ["Custom design", "Send a request for review"]].map(([title, detail]) => (
+              <div key={title}><p className="font-serif text-2xl text-[#e3b968] sm:text-3xl">{title}</p><p className="mt-1 text-[10px] leading-5 text-neutral-400">{detail}</p></div>
             ))}
           </div>
 

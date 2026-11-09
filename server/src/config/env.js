@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 export const env = {
   port: Number(process.env.PORT || 4000),
+  uploadsDirectory: process.env.UPLOADS_DIR || '',
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://127.0.0.1:5173',
   nodeEnv: process.env.NODE_ENV || 'development',
   trustProxy: process.env.TRUST_PROXY_HOPS ? Number(process.env.TRUST_PROXY_HOPS) : false,

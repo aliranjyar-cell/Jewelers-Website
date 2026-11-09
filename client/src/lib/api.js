@@ -184,3 +184,60 @@ export const publicProducts = {
   categories: () => publicProductRequest('/categories'),
   get: (slug) => publicProductRequest(`/${encodeURIComponent(slug)}`),
 };
+async function customerAuthRequest(path = '', options = {}) {
+  const response = await fetch(`/api/customer/auth${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
+  });
+  if (response.status === 204) return null;
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || 'Your account request could not be completed.');
+    error.status = response.status;
+    throw error;
+  }
+  return result;
+}
+
+export const customerAuth = {
+  register: (payload) => customerAuthRequest('/register', { method: 'POST', body: JSON.stringify(payload) }),
+  login: (payload) => customerAuthRequest('/login', { method: 'POST', body: JSON.stringify(payload) }),
+  current: () => customerAuthRequest('/me'),
+  orders: () => customerAuthRequest('/orders'),
+  logout: () => customerAuthRequest('/logout', { method: 'POST' }),
+};
+
+export const publicCustomOrders = {
+  create: async (payload) => {
+    const response = await fetch('/api/custom-requests', {
+      method: 'POST', credentials: 'include',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { const error = new Error(result.error || 'Your request could not be submitted.'); error.status = response.status; throw error; }
+    return result;
+  },
+};
+
+async function campaignRequest(path, options = {}) {
+  const response = await fetch(path, { ...options, credentials: options.credentials || 'include', headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers } });
+  if (response.status === 204) return null;
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'The campaign request could not be completed.');
+  return result;
+}
+
+export const adminCampaigns = {
+  list: () => campaignRequest('/api/admin/campaigns'),
+  uploadImage: (dataUrl) => campaignRequest('/api/admin/campaigns/images', { method: 'POST', body: JSON.stringify({ dataUrl }) }),
+  create: (payload) => campaignRequest('/api/admin/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id, payload) => campaignRequest(`/api/admin/campaigns/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  remove: (id) => campaignRequest(`/api/admin/campaigns/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
+export async function getPublicCampaign(placement) {
+  try { return await campaignRequest(`/api/campaigns/${encodeURIComponent(placement)}`, { credentials: 'omit' }); }
+  catch { return null; }
+}

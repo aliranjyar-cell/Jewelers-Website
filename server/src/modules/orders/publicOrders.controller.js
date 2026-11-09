@@ -11,5 +11,5 @@ export const previewCustomerOrder = asyncHandler(async (request, response) => {
 
 export const createCustomerOrder = asyncHandler(async (request, response) => {
   response.setHeader('Cache-Control', 'no-store');
-  response.status(201).json(await createOrderFromStorefront(request.body || {}));
+  response.status(201).json(await createOrderFromStorefront(request.body || {}, request.customer.id));
 });

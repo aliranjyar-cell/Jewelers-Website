@@ -54,10 +54,11 @@ export const getPublishedProducts = asyncHandler(async (request, response) => {
 export const getProductSitemap = asyncHandler(async (_request, response) => {
   const origin = new URL(process.env.CLIENT_ORIGIN || 'http://127.0.0.1:5173').origin;
   const rows = await listPublishedProductSlugs();
-  const urls = rows.map((row) => {
+  const fixedUrls = ['', '/shop', '/custom-order', '/about', '/contact', '/gold-rate'].map((route) => `<url><loc>${origin}${route}</loc></url>`);
+  const productUrls = rows.map((row) => {
     const updated = new Date(row.updatedAt).toISOString();
     return `<url><loc>${origin}/shop/${encodeURIComponent(row.slug)}</loc><lastmod>${updated}</lastmod></url>`;
-  }).join('');
+  });
   response.setHeader('Cache-Control', 'public, max-age=300');
-  response.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
+  response.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[...fixedUrls, ...productUrls].join('')}</urlset>`);
 });

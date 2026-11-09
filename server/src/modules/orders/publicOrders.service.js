@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto';
 import { pool } from '../../config/database.js';
-import { hashPassword } from '../auth/auth.service.js';
 import { reserveOrderInventoryInTransaction } from '../inventory/inventory.service.js';
 
 const MAX_CART_LINES = 40;
@@ -115,35 +114,23 @@ function validateCustomer(input) {
   return { recipientName, email, phone, addressLine1, addressLine2, city, province, postalCode, customerNote };
 }
 
-async function findOrCreateCustomer(connection, customer) {
-  const conditions = []; const values = [];
-  if (customer.email) { conditions.push('email = ?'); values.push(customer.email); }
-  conditions.push('phone = ?'); values.push(customer.phone);
-  const [matches] = await connection.execute(`SELECT id, email, phone, role FROM users WHERE ${conditions.join(' OR ')} FOR UPDATE`, values);
-  if (matches.length > 1) fail('These contact details are attached to different customer accounts. Please contact the store to place this order.', 409);
-  if (matches[0]) {
-    if (matches[0].role !== 'customer') fail('These contact details cannot be used for a store order. Please contact us by phone.', 409);
-    return String(matches[0].id);
-  }
-  const oneTimeSecret = await hashPassword(randomBytes(48).toString('base64url'));
-  const [result] = await connection.execute(
-    `INSERT INTO users (email, phone, password_hash, full_name, role)
-     VALUES (?, ?, ?, ?, 'customer')`, [customer.email, customer.phone, oneTimeSecret, customer.recipientName],
-  );
-  return String(result.insertId);
-}
-
 function orderNumber() {
   const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
   return `ZJ-${date}-${randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
-export async function createOrderFromStorefront(input) {
+export async function createOrderFromStorefront(input, customerId) {
+  if (!customerId) fail('Sign in or create an account before placing an order.', 401);
   const lines = validateItems(input.items);
   const customer = validateCustomer(input);
+  const paymentMethod = String(input.paymentMethod || '').trim().toLowerCase();
+  if (paymentMethod !== 'easypaisa') fail('Select Easypaisa as your payment method to continue.');
   if (!Array.isArray(input.expectedItems)) fail('Review the current price summary before submitting your order.');
   return withConnection(async (connection) => {
-    const userId = await findOrCreateCustomer(connection, customer);
+    const [[account]] = await connection.execute(
+      "SELECT id, email, phone, role, is_active FROM users WHERE id = ? LIMIT 1 FOR UPDATE", [customerId],
+    );
+    if (!account || account.role !== 'customer' || !account.is_active) fail('Your customer account could not be verified. Sign in again.', 401);
     const items = await loadPricedItems(connection, lines);
     const quote = summarize(items);
     const expected = new Map(input.expectedItems.map((item) => [String(item.variantId), item]));
@@ -166,7 +153,7 @@ export async function createOrderFromStorefront(input) {
        delivery_fee_pkr, discount_pkr, total_pkr, recipient_name, phone, address_snapshot,
        customer_note, delivery_fee_confirmed)
        VALUES (?, ?, 'placed', 'pending', 'PKR', ?, 0, 0, ?, ?, ?, ?, ?, 0)`,
-      [reference, userId, quote.subtotal, quote.subtotal, customer.recipientName, customer.phone, JSON.stringify(addressSnapshot), customer.customerNote],
+      [reference, customerId, quote.subtotal, quote.subtotal, customer.recipientName, customer.phone, JSON.stringify(addressSnapshot), customer.customerNote],
     );
     for (const item of items) {
       await connection.execute(
@@ -179,12 +166,16 @@ export async function createOrderFromStorefront(input) {
           item.makingCharge, item.unitPrice, item.quantity, item.lineTotal],
       );
     }
+    await connection.execute(
+      `INSERT INTO payment_transactions (order_id, provider, status, amount_pkr)
+       VALUES (?, 'easypaisa', 'pending', ?)`, [inserted.insertId, quote.subtotal],
+    );
     const reservation = await reserveOrderInventoryInTransaction(connection, String(inserted.insertId));
     await connection.execute(
       `INSERT INTO order_events (order_id, actor_id, event_type, from_value, to_value, note, metadata)
        VALUES (?, NULL, 'placed', NULL, 'placed', ?, ?)`,
-      [inserted.insertId, 'Customer submitted the order. Delivery fee and payment method require confirmation.', JSON.stringify({ reservedLines: reservation.items.filter((item) => item.reserved).length })],
+      [inserted.insertId, 'Customer submitted the order using Easypaisa. Payment instructions and delivery fee require confirmation.', JSON.stringify({ paymentMethod: 'easypaisa', reservedLines: reservation.items.filter((item) => item.reserved).length })],
     );
-    return { id: String(inserted.insertId), orderNumber: reference, status: 'placed', paymentStatus: 'pending', subtotal: quote.subtotal, deliveryFee: null, total: null, deliveryFeeConfirmed: false, itemCount: items.reduce((sum, item) => sum + item.quantity, 0) };
+    return { id: String(inserted.insertId), orderNumber: reference, status: 'placed', paymentStatus: 'pending', paymentMethod: 'easypaisa', subtotal: quote.subtotal, deliveryFee: null, total: null, deliveryFeeConfirmed: false, itemCount: items.reduce((sum, item) => sum + item.quantity, 0) };
   });
 }

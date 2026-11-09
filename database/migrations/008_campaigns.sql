@@ -1,0 +1,22 @@
+CREATE TABLE campaigns (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(120) NOT NULL,
+  eyebrow VARCHAR(100) NULL,
+  body TEXT NULL,
+  placement ENUM('hero','announcement','home_feature') NOT NULL DEFAULT 'hero',
+  status ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
+  image_url VARCHAR(1000) NULL,
+  mobile_image_url VARCHAR(1000) NULL,
+  image_alt VARCHAR(200) NULL,
+  cta_label VARCHAR(60) NULL,
+  cta_url VARCHAR(500) NULL,
+  starts_at DATETIME NULL,
+  ends_at DATETIME NULL,
+  priority INT NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_campaign_placement_status_schedule (placement, status, starts_at, ends_at, priority),
+  CONSTRAINT fk_campaign_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,4 +1,4 @@
-import { Coins, Gem, LayoutGrid, Package, ShoppingBag, Warehouse } from "lucide-react";
+import { Coins, Gem, LayoutGrid, Megaphone, Package, ShoppingBag, Warehouse } from "lucide-react";
 
 export const ADMIN_PAGES = [
   { id: "overview", label: "Dashboard", path: "/admin", icon: LayoutGrid, hint: "Store performance and daily work" },
@@ -7,6 +7,7 @@ export const ADMIN_PAGES = [
   { id: "orders", label: "Orders", path: "/admin/orders", icon: ShoppingBag, hint: "Customer orders and fulfillment" },
   { id: "custom-requests", label: "Custom requests", path: "/admin/custom-requests", icon: Gem, hint: "Made-to-order customer requests" },
   { id: "metal-rates", label: "Metal rates", path: "/admin/metal-rates", icon: Coins, hint: "Published gold and silver rates" },
+  { id: "campaigns", label: "Advertising", path: "/admin/campaigns", icon: Megaphone, hint: "Homepage promotions and campaigns" },
 ];
 
 export const NAV_ROUTES = Object.fromEntries(ADMIN_PAGES.map(({ id, path }) => [id, path]));
@@ -15,6 +16,7 @@ export const SIDEBAR_SECTIONS = [
   { title: "Store", items: ADMIN_PAGES.slice(0, 4) },
   { title: "Customer care", items: [ADMIN_PAGES[4]] },
   { title: "Pricing", items: [ADMIN_PAGES[5]] },
+  { title: "Marketing", items: [ADMIN_PAGES[6]] },
 ];
 
 export const SEARCH_ITEMS = ADMIN_PAGES;

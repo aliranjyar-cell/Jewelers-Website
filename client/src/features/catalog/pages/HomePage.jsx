@@ -6,12 +6,14 @@ import ZareenShowcase from './components/ZareenShowcase.jsx';
 import WhyChooseZareen from './components/WhyChooseZareen.jsx';
 import CustomOrderIntro from './components/CustomOrderIntro.jsx';
 import TrustServiceInfo from './components/TrustServiceInfo.jsx';
+import CampaignFeature from './components/CampaignFeature.jsx';
 
 export default function HomePage() {
   return (
     <main>
       <Hero />
       <ProductsSection />
+      <CampaignFeature />
       <ArchitecturalSplitSection />
       <ZareenShowcase />
       <CraftSection />

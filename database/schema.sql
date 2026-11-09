@@ -200,3 +200,4 @@ CREATE TABLE custom_order_requests (
   CONSTRAINT fk_custom_requests_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_custom_requests_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
