@@ -26,4 +26,4 @@ Do not use the XAMPP root account or local settings for a public production depl
 
 ## Advertising campaigns
 
-After applying `database/migrations/008_campaigns.sql`, an administrator can create hero, announcement, and homepage feature campaign records from `/admin/campaigns`. The homepage currently consumes active hero campaigns. Campaign images should be placed in persistent media storage and entered as a same-site path (for example `/uploads/campaigns/spring.webp`). Drafts and scheduled campaigns do not appear publicly until their active period.
+After applying `database/migrations/008_campaigns.sql` and `009_campaign_hero_style.sql`, an administrator can create hero, announcement, and homepage feature campaigns from `/admin/campaigns`. Hero campaigns support alignment and text color. Upload artwork in the admin panel; use persistent media storage for hosted environments. Drafts and scheduled campaigns do not appear publicly until their active period.
