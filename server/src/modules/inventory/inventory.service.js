@@ -217,7 +217,7 @@ export async function reserveOrderInventoryInTransaction(connection, orderId, ac
         "INSERT INTO inventory_reservations (order_id, order_item_id, variant_id, quantity, status) VALUES (?, ?, ?, ?, 'reserved')",
         [orderId, item.orderItemId, item.variantId, quantity],
       );
-      await insertMovement(connection, { variant, type: 'reserve', reservedChange: quantity, onHandAfter: variant.onHand, reservedAfter: reserved + quantity, reason: 'Order placed', orderId, actorId });
+      await insertMovement(connection, { variant, type: 'reserve', reservedChange: quantity, onHandAfter: variant.onHand, reservedAfter: reserved + quantity, reason: 'Order confirmed', orderId, actorId });
       results.push({ orderItemId: String(item.orderItemId), reserved: true, quantity });
     }
   return { orderId: String(orderId), items: results };

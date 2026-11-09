@@ -25,8 +25,6 @@ function parseJson(value, fallback = {}) {
   if (value && typeof value === 'object') return value;
   try { return JSON.parse(value || ''); } catch { return fallback; }
 }
-function idString(row) { return row ? { ...row, id: String(row.id) } : row; }
-
 async function withTransaction(work) {
   const connection = await pool.getConnection();
   try { await connection.beginTransaction(); const result = await work(connection); await connection.commit(); return result; }
@@ -48,8 +46,8 @@ export async function listAdminOrders(filters) {
   const clauses = ['1 = 1']; const values = [];
   if (filters.search) {
     const q = `%${filters.search}%`;
-    clauses.push('(o.order_number LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR o.phone LIKE ?)');
-    values.push(q, q, q, q, q);
+    clauses.push('(o.order_number LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR o.recipient_name LIKE ? OR o.phone LIKE ?)');
+    values.push(q, q, q, q, q, q);
   }
   if (filters.status && STATUSES.has(filters.status)) { clauses.push('o.status = ?'); values.push(filters.status); }
   if (filters.paymentStatus && PAYMENT_STATUSES.has(filters.paymentStatus)) { clauses.push('o.payment_status = ?'); values.push(filters.paymentStatus); }
@@ -80,12 +78,14 @@ export async function getAdminOrder(orderId) {
   );
   const order = orders[0]; if (!order) fail('Order not found.', 404);
   const [items] = await pool.execute(
-    `SELECT oi.id, oi.product_name_snapshot AS productName, oi.sku_snapshot AS sku, oi.option_snapshot AS option,
+    `SELECT oi.id, oi.product_name_snapshot AS productName, oi.sku_snapshot AS sku, oi.option_snapshot AS optionLabel,
      oi.metal_type_snapshot AS metalType, oi.purity_snapshot AS purity, oi.weight_grams_snapshot AS weightGrams,
      oi.metal_rate_pkr_snapshot AS metalRate, oi.making_charge_type_snapshot AS makingChargeType,
      oi.making_charge_pkr_snapshot AS makingCharge, oi.unit_price_pkr AS unitPrice, oi.quantity, oi.line_total_pkr AS lineTotal,
+     v.availability AS stockAvailability,
+     (SELECT ir.status FROM inventory_reservations ir WHERE ir.order_item_id = oi.id ORDER BY ir.id DESC LIMIT 1) AS reservationStatus,
      (SELECT pi.image_url FROM product_images pi WHERE pi.product_id = oi.product_id ORDER BY pi.sort_order, pi.id LIMIT 1) AS image
-     FROM order_items oi WHERE oi.order_id = ? ORDER BY oi.id`, [order.id],
+     FROM order_items oi LEFT JOIN product_variants v ON v.id = oi.variant_id WHERE oi.order_id = ? ORDER BY oi.id`, [order.id],
   );
   const [payments] = await pool.execute(
     `SELECT id, provider, provider_reference AS reference, status, amount_pkr AS amount, created_at AS createdAt, updated_at AS updatedAt
@@ -121,7 +121,16 @@ export async function setOrderStatus(orderId, input, admin) {
     if (!TRANSITIONS[order.status]?.has(status)) fail(`The order cannot move from ${order.status.replaceAll('_', ' ')} to ${status.replaceAll('_', ' ')}.`, 409);
     if (status === 'delivered' && order.payment_status !== 'paid' && !overrideReason) fail('Confirm payment first or provide a reason for the unpaid delivery override.', 409);
     if (status === 'confirmed') await reserveOrderInventoryInTransaction(connection, order.id, admin.id);
-    if (status === 'shipped') await fulfillOrderInventoryInTransaction(connection, order.id, admin.id);
+    if (status === 'shipped') {
+      if (order.payment_status === 'failed') fail('Resolve the failed payment before shipping this order.', 409);
+      const [unreserved] = await connection.execute(
+        `SELECT COUNT(*) AS total FROM order_items oi JOIN product_variants v ON v.id = oi.variant_id
+         WHERE oi.order_id = ? AND v.availability <> 'made_to_order'
+         AND NOT EXISTS (SELECT 1 FROM inventory_reservations ir WHERE ir.order_item_id = oi.id AND ir.status = 'reserved')`, [order.id],
+      );
+      if (Number(unreserved[0]?.total || 0)) fail('Some available items are not reserved. Reconfirm the order before shipping.', 409);
+      await fulfillOrderInventoryInTransaction(connection, order.id, admin.id);
+    }
     if (status === 'cancelled') await releaseOrderInventoryInTransaction(connection, order.id, admin.id);
     await connection.execute('UPDATE orders SET status = ? WHERE id = ?', [status, order.id]);
     await recordEvent(connection, { orderId: order.id, actorId: admin.id, type: 'status', fromValue: order.status, toValue: status, note: reason || overrideReason });
@@ -136,14 +145,26 @@ export async function setOrderPayment(orderId, input, admin) {
   const reference = boundedText(input.reference, 'Transaction reference', 160);
   const note = boundedText(input.note, 'Note', 500);
   return withTransaction(async (connection) => {
-    const [rows] = await connection.execute('SELECT id, payment_status, total_pkr FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
+    const [rows] = await connection.execute('SELECT id, status, payment_status, total_pkr FROM orders WHERE id = ? OR order_number = ? LIMIT 1 FOR UPDATE', [orderId, orderId]);
     const order = rows[0]; if (!order) fail('Order not found.', 404);
-    if (['cancelled', 'refunded'].includes(order.payment_status) && status !== order.payment_status) fail('This payment can no longer be changed.', 409);
+    if (order.payment_status === 'refunded' && status !== 'refunded') fail('A refunded payment cannot be changed.', 409);
+    if (order.status === 'refunded' && status !== 'refunded') fail('A refunded order can only have a refunded payment status.', 409);
+    if (order.payment_status === 'paid' && !['paid', 'refunded'].includes(status)) fail('A received payment cannot be changed to an unpaid or failed state. Record a refund if money was returned.', 409);
+    if (status === 'paid' && ['confirmed', 'processing'].includes(order.status)) await reserveOrderInventoryInTransaction(connection, order.id, admin.id);
     await connection.execute('UPDATE orders SET payment_status = ? WHERE id = ?', [status, order.id]);
-    await connection.execute(
-      `INSERT INTO payment_transactions (order_id, provider, provider_reference, status, amount_pkr)
-       VALUES (?, ?, ?, ?, ?)`, [order.id, provider, reference, ({ paid: 'succeeded', unpaid: 'initiated' })[status] || status, order.total_pkr],
+    const transactionStatus = ({ paid: 'succeeded', unpaid: 'initiated' })[status] || status;
+    const [attempts] = await connection.execute(
+      'SELECT id FROM payment_transactions WHERE order_id = ? AND provider = ? AND provider_reference <=> ? ORDER BY id DESC LIMIT 1 FOR UPDATE',
+      [order.id, provider, reference],
     );
+    if (attempts[0]) {
+      await connection.execute('UPDATE payment_transactions SET status = ?, amount_pkr = ? WHERE id = ?', [transactionStatus, order.total_pkr, attempts[0].id]);
+    } else {
+      await connection.execute(
+        `INSERT INTO payment_transactions (order_id, provider, provider_reference, status, amount_pkr)
+         VALUES (?, ?, ?, ?, ?)`, [order.id, provider, reference, transactionStatus, order.total_pkr],
+      );
+    }
     if (status === 'failed') await releaseOrderInventoryInTransaction(connection, order.id, admin.id);
     await recordEvent(connection, { orderId: order.id, actorId: admin.id, type: 'payment', fromValue: order.payment_status, toValue: status, note, metadata: { provider, reference } });
     return { id: String(order.id), paymentStatus: status };
