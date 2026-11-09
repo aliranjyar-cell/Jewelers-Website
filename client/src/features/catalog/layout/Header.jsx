@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Menu, Phone, Search, X } from 'lucide-react';
+import { Menu, Phone, Search, ShoppingBag, X } from 'lucide-react';
 import Logo from './Logo.jsx';
+import { useCart } from '../../cart/CartContext.jsx';
 
 const links = [
   { label: 'Shop', to: '/shop' },
@@ -18,6 +19,7 @@ export default function Header() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const { itemCount } = useCart();
   const isHome = location.pathname === '/';
   const solid = !isHome || scrolled;
 
@@ -76,6 +78,7 @@ export default function Header() {
 
           <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
             <Link to="/custom-order" className={`hidden border px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.16em] transition-colors 2xl:inline-flex ${solid && isHome ? 'border-[#d5b56c]/60 text-[#f0d69c] hover:bg-[#d5b56c] hover:text-neutral-950' : solid ? 'border-[#a8874d]/60 text-[#71562d] hover:bg-[#a8874d] hover:text-white' : 'border-white/55 text-white hover:border-[#d5b56c] hover:bg-[#d5b56c] hover:text-neutral-950'}`}>Made for you</Link>
+            <Link to="/cart" aria-label={`Shopping bag${itemCount ? `, ${itemCount} items` : ''}`} className={`${iconButton} relative`}><ShoppingBag className="h-[18px] w-[18px]" />{itemCount > 0 && <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#b58a43] px-1 text-[9px] font-semibold text-white">{itemCount > 99 ? '99+' : itemCount}</span>}</Link>
             <button type="button" onClick={() => { setSearchOpen((open) => !open); setMenuOpen(false); }} aria-label={searchOpen ? 'Close search' : 'Search products'} aria-expanded={searchOpen} className={iconButton}>{searchOpen ? <X className="h-[18px] w-[18px]" /> : <Search className="h-[18px] w-[18px]" />}</button>
             <button type="button" onClick={() => { setMenuOpen((open) => !open); setSearchOpen(false); }} aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} className={`${iconButton} xl:hidden`}>{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
           </div>

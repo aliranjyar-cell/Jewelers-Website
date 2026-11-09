@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, Check, ChevronLeft, ChevronRight, ClipboardList, History, LoaderCircle, Package, PackageCheck, Pencil, Plus, Search, X } from 'lucide-react';
 import { adminInventory } from '../../lib/api.js';
 import { formatDateTime, formatNumber } from './dashboard/utils/format.js';
@@ -15,8 +15,9 @@ function Metric({ icon: Icon, label, value, detail, tone = 'default' }) {
 }
 
 export default function InventoryPage() {
+  const [searchParams] = useSearchParams();
   const [view, setView] = useState('stock');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(() => ['low', 'out', 'unavailable', 'made_to_order'].includes(searchParams.get('filter')) ? searchParams.get('filter') : 'all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);

@@ -98,6 +98,48 @@ export const adminOrders = {
   updateFulfillment: (id, payload) => orderRequest(`/${encodeURIComponent(id)}/fulfillment`, { method: 'PATCH', body: JSON.stringify(payload) }),
 };
 
+async function metalRateRequest(path = '', options = {}) {
+  const response = await fetch(`/api/admin/metal-rates${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || 'The metal-rate request could not be completed.');
+    error.status = response.status;
+    throw error;
+  }
+  return result;
+}
+
+export const adminMetalRates = {
+  list: () => metalRateRequest('/'),
+  history: (limit = 30) => metalRateRequest(`/history?limit=${encodeURIComponent(limit)}`),
+  publish: (payload) => metalRateRequest('/', { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+async function customRequestAdminRequest(path = '', options = {}) {
+  const response = await fetch(`/api/admin/custom-requests${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || 'The custom-request request could not be completed.');
+    error.status = response.status;
+    throw error;
+  }
+  return result;
+}
+
+export const adminCustomRequests = {
+  list: (params = {}) => customRequestAdminRequest(`?${new URLSearchParams(params)}`),
+  get: (id) => customRequestAdminRequest(`/${encodeURIComponent(id)}`),
+  update: (id, payload) => customRequestAdminRequest(`/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+};
+
 const PUBLIC_PRODUCT_URL = '/api/products';
 
 async function publicProductRequest(path = '', options = {}) {

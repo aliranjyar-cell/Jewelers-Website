@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Archive, ArrowRight, ArrowUpRight, Boxes, Check, ChevronLeft, ChevronRight, ExternalLink, Gem, ImageOff, LoaderCircle, Plus, Search, Tag, X } from 'lucide-react';
 import { adminProducts } from '../../lib/api.js';
 import { formatNumber, formatPKR } from './dashboard/utils/format.js';
@@ -15,8 +15,9 @@ function imageUrl(src) {
 }
 
 export default function ProductsPage() {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(() => ['published', 'draft', 'archived'].includes(searchParams.get('status')) ? searchParams.get('status') : '');
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0, pageSize: 20 });
   const [loading, setLoading] = useState(true);

@@ -11,6 +11,11 @@ import ShopPage from '../features/catalog/pages/ShopPage.jsx';
 import InventoryPage from '../features/admin/InventoryPage.jsx';
 import OrdersPage from '../features/admin/OrdersPage.jsx';
 import OrderDetailPage from '../features/admin/OrderDetailPage.jsx';
+import CustomRequestsPage from '../features/admin/CustomRequestsPage.jsx';
+import CustomRequestDetailPage from '../features/admin/CustomRequestDetailPage.jsx';
+import CartPage from '../features/cart/CartPage.jsx';
+import CheckoutPage from '../features/checkout/CheckoutPage.jsx';
+import OrderConfirmationPage from '../features/checkout/OrderConfirmationPage.jsx';
 import StorefrontLayout from '../features/catalog/layout/StorefrontLayout.jsx';
 
 function LegacyProductRedirect() {
@@ -20,17 +25,6 @@ function LegacyProductRedirect() {
 
 function StoreInfoPage({ title, description, note }) {
   return <main className="grid min-h-[70vh] place-items-center px-5 py-16 text-center"><div className="max-w-xl"><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">Zareen Jewellers</p><h1 className="mt-4 font-serif text-4xl sm:text-5xl">{title}</h1><p className="mt-5 text-sm leading-7 text-stone-600">{description}</p>{note && <p className="mt-5 border border-amber-200 bg-amber-50 px-5 py-4 text-left text-xs leading-6 text-amber-950">{note}</p>}<a href="tel:+923128001212" className="mt-7 inline-flex rounded-full bg-stone-900 px-6 py-3 text-sm text-white hover:bg-stone-700">Call +92 312 800 1212</a><p className="mt-3 text-xs text-stone-500">Mon–Sat, 11:00 am–8:00 pm</p><Link to="/shop" className="mt-6 block text-xs font-medium uppercase tracking-[0.16em] text-amber-800">Browse the collection</Link></div></main>;
-}
-
-function AdminComingSoon({ title }) {
-  return (
-    <section className="rounded-3xl bg-white p-8 ring-1 ring-black/5 dark:bg-[#141416] dark:ring-white/10">
-      <h1 className="text-2xl font-semibold text-neutral-950 dark:text-white">{title}</h1>
-      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-        This area is part of the implementation roadmap.
-      </p>
-    </section>
-  );
 }
 
 function ComingSoon({ title }) {
@@ -49,6 +43,9 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="shop" element={<ShopPage />} />
         <Route path="shop/:slug" element={<StoreProductPage />} />
+        <Route path="cart" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="order-confirmation/:orderNumber" element={<OrderConfirmationPage />} />
         <Route path="product/:slug" element={<LegacyProductRedirect />} />
         <Route path="custom-order" element={<StoreInfoPage title="A piece made for you" description="Ask us about made-to-order rings, bridal jewellery, necklaces, bangles, and redesigns. Share the occasion, design, preferred metal and purity, size or approximate weight, budget range, and any sketches or reference images. Our jewellers will review your request and provide a quote with next steps." note="Sending a request does not place an order or confirm a final price. An order is confirmed only after you review and accept the quote." />} />
         <Route path="gold-rate" element={<StoreInfoPage title="Today’s gold rate" description="Gold prices change throughout the day. Contact our team for the latest rate before placing an order or visiting the showroom." />} />
@@ -72,8 +69,8 @@ export default function App() {
         <Route path="products/:productId/edit" element={<ProductFormPage />} />
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="metal-rates" element={<MetalRatesPage />} />
-        <Route path="custom-requests" element={<AdminComingSoon title="Custom requests" />} />
-        <Route path="custom-requests/:requestId" element={<AdminComingSoon title="Custom request details" />} />
+        <Route path="custom-requests" element={<CustomRequestsPage />} />
+        <Route path="custom-requests/:requestId" element={<CustomRequestDetailPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 

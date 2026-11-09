@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, ArrowRight, Gem, ImageOff, LoaderCircle, ShieldCheck } from 'lucide-react';
+import { useCart } from '../../cart/CartContext.jsx';
 
 const pkr = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 });
 const money = (amount) => `PKR ${pkr.format(Number(amount || 0))}`;
@@ -14,6 +15,8 @@ export default function StoreProductPage() {
   const [imageFailed, setImageFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [added, setAdded] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,6 +60,11 @@ export default function StoreProductPage() {
   const image = images[selectedImage];
   const hasInventory = variant?.availability === 'made_to_order' || (variant?.availability === 'available' && variant?.availableQuantity > 0);
   const canOrder = hasInventory && variant?.rateAvailable !== false && Number(variant?.fixedPrice) > 0;
+  function addToBag() {
+    addItem(product, variant, 1);
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 2400);
+  }
   const productJson = JSON.stringify(structuredData).replace(/</g, '\\u003c');
 
   return (
@@ -79,7 +87,7 @@ export default function StoreProductPage() {
             <div className="my-6 h-px bg-stone-200" />
             {variants.length > 1 && <label className="block text-sm font-medium">Choose an option<select value={selectedVariant} onChange={(event) => setSelectedVariant(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm outline-none focus:border-amber-700">{variants.map((row) => <option key={row.id} value={row.id}>{row.optionLabel} {row.availability === 'unavailable' ? '· Unavailable' : ''}</option>)}</select></label>}
             {!canOrder && <p role="status" className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{variant?.rateAvailable === false ? 'We are updating the metal rate for this product. Contact us for the current price.' : 'This option is currently unavailable. Contact us to ask about a similar piece.'}</p>}
-            <Link to="/custom-order" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-stone-900 px-6 text-sm font-medium text-white transition hover:bg-stone-700">{variant?.availability === 'made_to_order' ? 'Request this piece' : 'Enquire about this piece'}<ArrowRight className="h-4 w-4" /></Link>
+            {canOrder ? <div className="mt-6 flex flex-wrap items-center gap-3"><button type="button" onClick={addToBag} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-stone-900 px-7 text-sm font-medium text-white transition hover:bg-stone-700">{added ? 'Added to bag' : 'Add to bag'}<ArrowRight className="h-4 w-4" /></button>{added && <Link to="/cart" className="text-sm font-medium text-amber-800 underline underline-offset-4">View bag</Link>}</div> : <Link to="/custom-order" className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-stone-900 px-6 text-sm font-medium text-white transition hover:bg-stone-700">{variant?.availability === 'made_to_order' ? 'Request this piece' : 'Enquire about this piece'}<ArrowRight className="h-4 w-4" /></Link>}
             <p className="mt-4 flex items-center gap-2 text-xs text-stone-500"><ShieldCheck className="h-4 w-4 text-emerald-700" />Made with care in Pakistan</p>
             <div className="mt-8 space-y-4 border-t border-stone-200 pt-6"><div><h2 className="text-sm font-semibold">About this piece</h2><p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-stone-600">{product.description}</p></div>{product.stoneMaterials && <Detail label="Stone & materials" value={product.stoneMaterials} />}{product.finishColor && <Detail label="Finish" value={product.finishColor} />}{variant?.weightGrams && <Detail label="Approx. weight" value={`${variant.weightGrams} g`} />}{product.careInstructions && <Detail label="Care instructions" value={product.careInstructions} />}</div>
           </section>

@@ -67,6 +67,13 @@ export default function StockAlerts({ stock, loading, className = "", delay = 0 
     selected ?? Object.keys(TABS).find((key) => counts[key] > 0) ?? "out_of_stock";
   const visible = items.filter((item) => item.type === activeTab).slice(0, MAX_ROWS);
   const tab = TABS[activeTab];
+  const viewAllHref = activeTab === 'out_of_stock'
+    ? `${adminPaths.inventory}?filter=out`
+    : activeTab === 'low_stock'
+      ? `${adminPaths.inventory}?filter=low`
+      : activeTab === 'draft'
+        ? `${adminPaths.products}?status=draft`
+        : adminPaths.products;
 
   return (
     <Card delay={delay} className={`p-5 ${className}`}>
@@ -133,13 +140,13 @@ export default function StockAlerts({ stock, loading, className = "", delay = 0 
                     {describe(item)}
                   </p>
                 </div>
-                <ActionLink to={item.type === "out_of_stock" || item.type === "low_stock" ? adminPaths.inventory : adminPaths.productEdit(item.id)}>{tab.action}</ActionLink>
+              <ActionLink to={item.type === "out_of_stock" ? `${adminPaths.inventory}?filter=out` : item.type === "low_stock" ? `${adminPaths.inventory}?filter=low` : adminPaths.productEdit(item.id)}>{tab.action}</ActionLink>
               </li>
             ))}
           </ul>
           {counts[activeTab] > visible.length && (
             <div className="mt-3 flex justify-end">
-              <TextLink to={`${adminPaths.products}?filter=${activeTab}`}>
+              <TextLink to={viewAllHref}>
                 View all {counts[activeTab]}
               </TextLink>
             </div>

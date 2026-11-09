@@ -110,7 +110,7 @@ async function getSummary(period) {
     },
     orders: {
       total: number(row.orders_current),
-      needingAction: attention.counts.new_order + attention.counts.payment + attention.counts.fulfilment,
+      needingAction: attention.orderActionCount,
       previousTotal: number(row.orders_previous),
     },
     averageOrderValue: {
@@ -155,9 +155,11 @@ async function getAttention() {
   const [orderCounts] = await pool.execute(
     `SELECT
        SUM(CASE WHEN status = 'placed' THEN 1 ELSE 0 END) AS new_order,
-       SUM(CASE WHEN status = 'pending_payment' THEN 1 ELSE 0 END) AS payment,
-       SUM(CASE WHEN status IN ('confirmed', 'processing') THEN 1 ELSE 0 END) AS fulfilment
-     FROM orders WHERE status IN ('placed', 'pending_payment', 'confirmed', 'processing')`,
+       SUM(CASE WHEN payment_status IN ('unpaid', 'pending', 'failed') AND status NOT IN ('cancelled', 'refunded') THEN 1 ELSE 0 END) AS payment,
+       SUM(CASE WHEN status IN ('confirmed', 'processing') THEN 1 ELSE 0 END) AS fulfilment,
+       SUM(CASE WHEN status IN ('placed', 'confirmed', 'processing') OR
+         (payment_status IN ('unpaid', 'pending', 'failed') AND status NOT IN ('cancelled', 'refunded')) THEN 1 ELSE 0 END) AS order_action_count
+     FROM orders WHERE status NOT IN ('cancelled', 'refunded')`,
   );
   const [requestCounts] = await pool.execute(
     `SELECT COUNT(*) AS custom_request FROM custom_order_requests WHERE status IN ('submitted', 'reviewing')`,
@@ -171,14 +173,10 @@ async function getAttention() {
 
   const [[orderRows], [requestRows]] = await Promise.all([
     pool.execute(
-      `SELECT o.id, o.order_number, o.total_pkr, o.status, o.created_at, u.full_name AS customer,
-              CASE
-                WHEN o.status = 'placed' THEN 'new_order'
-                WHEN o.status = 'pending_payment' THEN 'payment'
-                ELSE 'fulfilment'
-              END AS attention_type
+      `SELECT o.id, o.order_number, o.total_pkr, o.status, o.payment_status, o.created_at, u.full_name AS customer
        FROM orders o JOIN users u ON u.id = o.user_id
-       WHERE o.status IN ('placed', 'pending_payment', 'confirmed', 'processing')
+       WHERE o.status NOT IN ('cancelled', 'refunded') AND
+         (o.status IN ('placed', 'confirmed', 'processing') OR o.payment_status IN ('unpaid', 'pending', 'failed'))
        ORDER BY o.created_at ASC LIMIT 30`,
     ),
     pool.execute(
@@ -189,15 +187,14 @@ async function getAttention() {
     ),
   ]);
 
-  const orderItems = orderRows.map((row) => ({
-    id: String(row.id),
-    type: row.attention_type,
-    reference: `#${row.order_number}`,
-    customer: row.customer,
-    amount: number(row.total_pkr),
-    status: row.attention_type === 'payment' ? 'payment_review' : row.status,
-    createdAt: row.created_at,
-  }));
+  const orderItems = orderRows.flatMap((row) => {
+    const common = { id: String(row.id), reference: `#${row.order_number}`, customer: row.customer, amount: number(row.total_pkr), createdAt: row.created_at };
+    const items = [];
+    if (row.status === 'placed') items.push({ ...common, type: 'new_order', status: row.status });
+    if (['unpaid', 'pending', 'failed'].includes(row.payment_status)) items.push({ ...common, type: 'payment', status: 'payment_review' });
+    if (['confirmed', 'processing'].includes(row.status)) items.push({ ...common, type: 'fulfilment', status: row.status });
+    return items;
+  });
   const requestItems = requestRows.map((row) => ({
     id: String(row.id),
     type: 'custom_request',
@@ -208,7 +205,7 @@ async function getAttention() {
     createdAt: row.created_at,
   }));
   const items = [...orderItems, ...requestItems].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 40);
-  return { counts, items };
+  return { counts, items, orderActionCount: number(orderCounts[0]?.order_action_count) };
 }
 
 async function getStock() {
