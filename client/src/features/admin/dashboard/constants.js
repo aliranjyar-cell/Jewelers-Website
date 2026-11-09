@@ -24,6 +24,7 @@ export const adminPaths = {
   customRequest: (id) => `/admin/custom-requests/${id}`,
   products: "/admin/products",
   productEdit: (id) => `/admin/products/${id}/edit`,
+  inventory: "/admin/inventory",
   metalRates: "/admin/metal-rates",
 };
 

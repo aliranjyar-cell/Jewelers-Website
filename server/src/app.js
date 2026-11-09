@@ -8,6 +8,8 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { dashboardRoutes } from './modules/admin-dashboard/dashboard.routes.js';
 import { productRoutes } from './modules/products/products.routes.js';
 import { publicProductRoutes } from './modules/products/publicProducts.routes.js';
+import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
+import { orderRoutes } from './modules/orders/orders.routes.js';
 
 export const app = express();
 
@@ -16,12 +18,20 @@ app.set('trust proxy', env.trustProxy);
 app.use(helmet());
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 const uploadsDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads');
-app.use('/uploads', express.static(uploadsDirectory, { fallthrough: false, maxAge: '1d' }));
+app.use('/uploads', express.static(uploadsDirectory, {
+  fallthrough: false,
+  maxAge: '1d',
+  setHeaders(response) {
+    response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  },
+}));
 app.use('/api/admin/products', productRoutes);
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin/dashboard', dashboardRoutes);
+app.use('/api/admin/inventory', inventoryRoutes);
+app.use('/api/admin/orders', orderRoutes);
 app.use('/api/products', publicProductRoutes);
 
 app.get('/api/health', (_request, response) => {

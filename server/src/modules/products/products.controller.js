@@ -1,4 +1,4 @@
-import { getProduct, getPublishedProductBySlug, listProductCategories, listProducts, listPublishedProductSlugs, previewVariantPrice, saveProduct } from './products.service.js';
+import { getProduct, getPublishedProductBySlug, listProductCategories, listProducts, listPublishedCategories, listPublishedProductSlugs, listPublishedProducts, previewVariantPrice, saveProduct } from './products.service.js';
 
 function asyncHandler(handler) {
   return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
@@ -6,6 +6,11 @@ function asyncHandler(handler) {
 
 export const getCategories = asyncHandler(async (_request, response) => {
   response.json({ items: await listProductCategories() });
+});
+
+export const getPublishedCategories = asyncHandler(async (_request, response) => {
+  response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  response.json({ items: await listPublishedCategories() });
 });
 
 export const getProducts = asyncHandler(async (request, response) => {
@@ -36,6 +41,14 @@ export const getPricePreview = asyncHandler(async (request, response) => {
 export const getPublishedProduct = asyncHandler(async (request, response) => {
   response.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
   response.json(await getPublishedProductBySlug(request.params.slug));
+});
+
+export const getPublishedProducts = asyncHandler(async (request, response) => {
+  const page = Math.max(1, Math.min(10000, Number.parseInt(request.query.page, 10) || 1));
+  const pageSize = Math.max(1, Math.min(50, Number.parseInt(request.query.pageSize, 10) || 20));
+  const search = String(request.query.search || '').trim().slice(0, 120);
+  const category = String(request.query.category || '').trim();
+  response.json(await listPublishedProducts({ search, category, page, pageSize }));
 });
 
 export const getProductSitemap = asyncHandler(async (_request, response) => {

@@ -2,7 +2,6 @@ import { pool } from '../../config/database.js';
 
 const TIME_ZONE = 'Asia/Karachi';
 const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
-const STOCK_THRESHOLD = 3;
 
 function localDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -213,6 +212,10 @@ async function getAttention() {
 }
 
 async function getStock() {
+  const sellableQuantity = `GREATEST(v.stock_quantity - (
+    SELECT COALESCE(SUM(ir.quantity), 0) FROM inventory_reservations ir
+    WHERE ir.variant_id = v.id AND ir.status = 'reserved'
+  ), 0)`;
   const noSellableVariant = `NOT EXISTS (
     SELECT 1 FROM product_variants v WHERE v.product_id = p.id
       AND ((v.pricing_mode = 'fixed' AND v.fixed_price_pkr IS NOT NULL)
@@ -230,24 +233,22 @@ async function getStock() {
   const [countsResult, outResult, lowResult, draftResult, incompleteResult] = await Promise.all([
     pool.execute(
       `SELECT
-         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity = 0) AS out_of_stock,
-         (SELECT COUNT(*) FROM product_variants v WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity BETWEEN 1 AND ?) AS low_stock,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.availability = 'available' AND ${sellableQuantity} = 0) AS out_of_stock,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.availability = 'available' AND ${sellableQuantity} BETWEEN 1 AND v.reorder_point) AS low_stock,
          (SELECT COUNT(*) FROM products WHERE status = 'draft') AS draft,
          (SELECT COUNT(*) FROM products p WHERE ${incompleteCondition}) AS incomplete`,
-      [STOCK_THRESHOLD],
     ),
     pool.execute(
-      `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, v.stock_quantity AS stock
+      `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, ${sellableQuantity} AS stock, v.reorder_point AS threshold
        FROM product_variants v JOIN products p ON p.id = v.product_id
        LEFT JOIN product_images pvi ON pvi.product_id = p.id AND pvi.sort_order = (SELECT MIN(pi.sort_order) FROM product_images pi WHERE pi.product_id = p.id)
-       WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity = 0 ORDER BY v.updated_at DESC LIMIT 5`,
+       WHERE v.availability = 'available' AND ${sellableQuantity} = 0 ORDER BY v.updated_at DESC LIMIT 5`,
     ),
     pool.execute(
-      `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, v.stock_quantity AS stock
+      `SELECT p.id, p.name, pvi.image_url AS image, COALESCE(v.option_label, v.sku) AS variant, ${sellableQuantity} AS stock, v.reorder_point AS threshold
        FROM product_variants v JOIN products p ON p.id = v.product_id
        LEFT JOIN product_images pvi ON pvi.product_id = p.id AND pvi.sort_order = (SELECT MIN(pi.sort_order) FROM product_images pi WHERE pi.product_id = p.id)
-       WHERE v.is_available = 1 AND v.availability <> 'made_to_order' AND v.stock_quantity BETWEEN 1 AND ? ORDER BY v.stock_quantity ASC, v.updated_at DESC LIMIT 5`,
-      [STOCK_THRESHOLD],
+       WHERE v.availability = 'available' AND ${sellableQuantity} BETWEEN 1 AND v.reorder_point ORDER BY ${sellableQuantity} ASC, v.updated_at DESC LIMIT 5`,
     ),
     pool.execute(
       `SELECT p.id, p.name, pvi.image_url AS image
@@ -281,7 +282,7 @@ async function getStock() {
   });
   const variantItems = (rows, type) => rows.map((row) => ({
     id: String(row.id), type, name: row.name, image: row.image || null,
-    variant: row.variant || null, stock: number(row.stock), threshold: STOCK_THRESHOLD,
+    variant: row.variant || null, stock: number(row.stock), threshold: number(row.threshold),
   }));
   return {
     counts: {

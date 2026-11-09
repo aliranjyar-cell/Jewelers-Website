@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes } from 'react-router';
+import { Link, Navigate, Route, Routes, useParams } from 'react-router';
 import AdminLoginPage from '../features/admin/AdminLoginPage.jsx';
 import AdminLayout from '../features/admin/AdminLayout.jsx';
 import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
@@ -6,32 +6,20 @@ import MetalRatesPage from '../features/admin/MetalRatesPage.jsx';
 import ProductsPage from '../features/admin/ProductsPage.jsx';
 import ProductFormPage from '../features/admin/ProductFormPage.jsx';
 import StoreProductPage from '../features/catalog/pages/StoreProductPage.jsx';
+import HomePage from '../features/catalog/pages/HomePage.jsx';
+import ShopPage from '../features/catalog/pages/ShopPage.jsx';
+import InventoryPage from '../features/admin/InventoryPage.jsx';
+import OrdersPage from '../features/admin/OrdersPage.jsx';
+import OrderDetailPage from '../features/admin/OrderDetailPage.jsx';
+import StorefrontLayout from '../features/catalog/layout/StorefrontLayout.jsx';
 
+function LegacyProductRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/shop/${encodeURIComponent(slug || '')}`} replace />;
+}
 
-function StoreHome() {
-  return (
-    <main className="min-h-screen bg-stone-50 text-stone-900">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link to="/" className="text-lg font-semibold tracking-[0.18em]">JEWELRY HOUSE</Link>
-        <nav className="flex gap-6 text-sm" aria-label="Main navigation">
-          <Link to="/shop">Shop</Link>
-          <Link to="/custom-order">Custom order</Link>
-        </nav>
-      </header>
-      <section className="mx-auto grid min-h-[70vh] max-w-7xl items-center gap-10 px-6 py-16 md:grid-cols-2">
-        <div>
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">Made with care in Pakistan</p>
-          <h1 className="max-w-xl text-5xl font-light leading-tight md:text-7xl">Jewelry for the moments you keep.</h1>
-          <p className="mt-6 max-w-lg text-stone-600">Explore rings, necklaces, and chains, or work with us to create a custom piece.</p>
-          <Link to="/shop" className="mt-8 inline-flex rounded-full bg-stone-900 px-6 py-3 text-sm text-white">Explore collection</Link>
-        </div>
-        <div className="flex min-h-80 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-100 via-stone-100 to-stone-200 p-10 text-center text-sm text-stone-500">
-          Product photography will appear here
-        </div>
-      </section>
-      <footer className="border-t border-stone-200 px-6 py-6 text-center text-xs text-stone-500">Quetta, Pakistan · Jewelry Store</footer>
-    </main>
-  );
+function StoreInfoPage({ title, description, note }) {
+  return <main className="grid min-h-[70vh] place-items-center px-5 py-16 text-center"><div className="max-w-xl"><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-800">Zareen Jewellers</p><h1 className="mt-4 font-serif text-4xl sm:text-5xl">{title}</h1><p className="mt-5 text-sm leading-7 text-stone-600">{description}</p>{note && <p className="mt-5 border border-amber-200 bg-amber-50 px-5 py-4 text-left text-xs leading-6 text-amber-950">{note}</p>}<a href="tel:+923128001212" className="mt-7 inline-flex rounded-full bg-stone-900 px-6 py-3 text-sm text-white hover:bg-stone-700">Call +92 312 800 1212</a><p className="mt-3 text-xs text-stone-500">Mon–Sat, 11:00 am–8:00 pm</p><Link to="/shop" className="mt-6 block text-xs font-medium uppercase tracking-[0.16em] text-amber-800">Browse the collection</Link></div></main>;
 }
 
 function AdminComingSoon({ title }) {
@@ -57,21 +45,32 @@ function ComingSoon({ title }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<StoreHome />} />
-      <Route path="/shop" element={<ComingSoon title="Shop" />} />
-      <Route path="/shop/:slug" element={<StoreProductPage />} />
-      <Route path="/custom-order" element={<ComingSoon title="Custom order" />} />
+      <Route path="/" element={<StorefrontLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="shop" element={<ShopPage />} />
+        <Route path="shop/:slug" element={<StoreProductPage />} />
+        <Route path="product/:slug" element={<LegacyProductRedirect />} />
+        <Route path="custom-order" element={<StoreInfoPage title="A piece made for you" description="Ask us about made-to-order rings, bridal jewellery, necklaces, bangles, and redesigns. Share the occasion, design, preferred metal and purity, size or approximate weight, budget range, and any sketches or reference images. Our jewellers will review your request and provide a quote with next steps." note="Sending a request does not place an order or confirm a final price. An order is confirmed only after you review and accept the quote." />} />
+        <Route path="gold-rate" element={<StoreInfoPage title="Today’s gold rate" description="Gold prices change throughout the day. Contact our team for the latest rate before placing an order or visiting the showroom." />} />
+        <Route path="contact" element={<StoreInfoPage title="Talk with our team" description="Contact Zareen Jewellers in Quetta for product questions, delivery coverage and timelines, accepted payment methods, or return and exchange terms. We’ll confirm the details for your order before you decide." />} />
+        <Route path="about" element={<StoreInfoPage title="Made with care in Quetta" description="Zareen Jewellers brings together careful craftsmanship, considered design, and personal service for every piece." />} />
+        <Route path="gold" element={<Navigate to="/shop" replace />} />
+        <Route path="bridal" element={<Navigate to="/shop" replace />} />
+        <Route path="bullion" element={<Navigate to="/shop" replace />} />
+        <Route path="collections" element={<Navigate to="/shop" replace />} />
+      </Route>
 
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
       {/* Every page inside here gets the sidebar + header and is protected by the layout */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboardPage />} />
-        <Route path="orders" element={<AdminComingSoon title="Orders" />} />
-        <Route path="orders/:orderId" element={<AdminComingSoon title="Order details" />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:orderId" element={<OrderDetailPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/new" element={<ProductFormPage />} />
         <Route path="products/:productId/edit" element={<ProductFormPage />} />
+        <Route path="inventory" element={<InventoryPage />} />
         <Route path="metal-rates" element={<MetalRatesPage />} />
         <Route path="custom-requests" element={<AdminComingSoon title="Custom requests" />} />
         <Route path="custom-requests/:requestId" element={<AdminComingSoon title="Custom request details" />} />

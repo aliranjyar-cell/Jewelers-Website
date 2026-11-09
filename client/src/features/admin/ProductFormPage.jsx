@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, Check, Eye, Gem, ImagePlus, LoaderCircle, Plus, Save, Search, Sparkles, Trash2 } from 'lucide-react';
 import { adminProducts } from '../../lib/api.js';
 import { Badge, Card } from './dashboard/components/ui.jsx';
@@ -42,7 +42,6 @@ function fileAsDataUrl(file) {
 
 export default function ProductFormPage() {
   const { productId } = useParams();
-  const navigate = useNavigate();
   const editing = Boolean(productId);
   const [product, setProduct] = useState(blankProduct);
   const [categories, setCategories] = useState([]);
@@ -130,10 +129,15 @@ export default function ProductFormPage() {
         images: product.images.map(({ id, url, dataUrl, altText }) => ({ id, url, dataUrl, altText })),
       };
       const result = editing ? await adminProducts.update(productId, payload) : await adminProducts.create(payload);
-      setProduct({ ...blankProduct(), ...result, images: result.images || [], variants: result.variants?.length ? result.variants : [blankVariant()] });
-      setSlugEdited(true);
-      if (!editing) navigate(`/admin/products/${result.id}/edit`, { replace: true });
-      setNotice(status === 'published' ? 'Product published. Your SEO fields and photo alt text are saved.' : status === 'archived' ? 'Product archived.' : 'Draft saved.');
+      if (editing) {
+        setProduct({ ...blankProduct(), ...result, images: result.images || [], variants: result.variants?.length ? result.variants : [blankVariant()] });
+        setSlugEdited(true);
+        setNotice(status === 'published' ? 'Product published. Your SEO fields and photo alt text are saved.' : status === 'archived' ? 'Product archived.' : 'Draft saved.');
+      } else {
+        setProduct(blankProduct());
+        setSlugEdited(false);
+        setNotice(status === 'published' ? 'Product published.' : 'Draft saved.');
+      }
     } catch (failure) { setError(failure.message); setDetails(failure.details || []); }
     finally { setSaving(false); }
   }
@@ -177,7 +181,7 @@ export default function ProductFormPage() {
           </Section>
 
           <Section id="pricing" number="5" title="Pricing and stock" description="Each variant uses one pricing method. Rate-based prices update from the latest published rate.">
-            {product.variants.map((variant, index) => <div key={variant.id || `price-${index}`} className="rounded-2xl border border-neutral-200 p-4 dark:border-white/10"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-neutral-900 dark:text-white">{variant.optionLabel || `Variant ${index + 1}`}</p><span className="text-xs text-neutral-400">SKU {variant.sku || 'not set'}</span></div><div className="grid gap-4 sm:grid-cols-2"><Select label="Pricing method" value={variant.pricingMode} onChange={(event) => changeVariant(index, 'pricingMode', event.target.value)}><option value="fixed">Fixed price</option><option value="metal_weight">Metal weight + making charge</option></Select><Input label="Available quantity" type="number" min="0" step="1" value={variant.stockQuantity} onChange={(event) => changeVariant(index, 'stockQuantity', event.target.value)} />{variant.pricingMode === 'fixed' ? <Input className="sm:col-span-2" label="Price (PKR) *" type="number" min="0.01" step="0.01" value={variant.fixedPrice} onChange={(event) => changeVariant(index, 'fixedPrice', event.target.value)} /> : <><Select label="Making-charge method" value={variant.makingChargeType} onChange={(event) => changeVariant(index, 'makingChargeType', event.target.value)}><option value="fixed">Fixed amount</option><option value="per_gram">Per gram</option></Select><Input label={`Making charge (PKR${variant.makingChargeType === 'per_gram' ? ' / g' : ''})`} type="number" min="0" step="0.01" value={variant.makingCharge} onChange={(event) => changeVariant(index, 'makingCharge', event.target.value)} /></>}</div>{variant.pricingMode === 'metal_weight' && <div className={`mt-4 rounded-2xl p-4 ${previews[index]?.available ? 'bg-teal-50/70 dark:bg-teal-500/10' : 'bg-amber-50 dark:bg-amber-500/10'}`}>{previews[index]?.available ? <><div className="flex items-center gap-2 text-xs font-semibold text-teal-800 dark:text-teal-200"><Sparkles className="h-4 w-4" /> Price breakdown · rate PKR {Number(previews[index].ratePerGram).toLocaleString()} / g</div><div className="mt-3 grid grid-cols-3 gap-2 text-xs text-teal-900 dark:text-teal-100"><div><p className="opacity-70">Metal value</p><p className="mt-1 font-semibold">PKR {Number(previews[index].metalValue).toLocaleString()}</p></div><div><p className="opacity-70">Making charge</p><p className="mt-1 font-semibold">PKR {Number(previews[index].makingCharge).toLocaleString()}</p></div><div><p className="opacity-70">Item price</p><p className="mt-1 font-semibold">PKR {Number(previews[index].calculatedPrice).toLocaleString()}</p></div></div></> : <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{previews[index]?.warning || `Enter the product's ${product.metalType} purity and this variant's weight to preview pricing. A published rate is required before publishing.`}</p>}</div>}</div>)}
+            {product.variants.map((variant, index) => <div key={variant.id || `price-${index}`} className="rounded-2xl border border-neutral-200 p-4 dark:border-white/10"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-neutral-900 dark:text-white">{variant.optionLabel || `Variant ${index + 1}`}</p><span className="text-xs text-neutral-400">SKU {variant.sku || 'not set'}</span></div><div className="grid gap-4 sm:grid-cols-2"><Select label="Pricing method" value={variant.pricingMode} onChange={(event) => changeVariant(index, 'pricingMode', event.target.value)}><option value="fixed">Fixed price</option><option value="metal_weight">Metal weight + making charge</option></Select><Input label="On-hand quantity" type="number" min="0" step="1" value={variant.stockQuantity} readOnly help="Receive or adjust stock from Inventory to keep an auditable count." />{variant.pricingMode === 'fixed' ? <Input className="sm:col-span-2" label="Price (PKR) *" type="number" min="0.01" step="0.01" value={variant.fixedPrice} onChange={(event) => changeVariant(index, 'fixedPrice', event.target.value)} /> : <><Select label="Making-charge method" value={variant.makingChargeType} onChange={(event) => changeVariant(index, 'makingChargeType', event.target.value)}><option value="fixed">Fixed amount</option><option value="per_gram">Per gram</option></Select><Input label={`Making charge (PKR${variant.makingChargeType === 'per_gram' ? ' / g' : ''})`} type="number" min="0" step="0.01" value={variant.makingCharge} onChange={(event) => changeVariant(index, 'makingCharge', event.target.value)} /></>}</div>{variant.pricingMode === 'metal_weight' && <div className={`mt-4 rounded-2xl p-4 ${previews[index]?.available ? 'bg-teal-50/70 dark:bg-teal-500/10' : 'bg-amber-50 dark:bg-amber-500/10'}`}>{previews[index]?.available ? <><div className="flex items-center gap-2 text-xs font-semibold text-teal-800 dark:text-teal-200"><Sparkles className="h-4 w-4" /> Price breakdown · rate PKR {Number(previews[index].ratePerGram).toLocaleString()} / g</div><div className="mt-3 grid grid-cols-3 gap-2 text-xs text-teal-900 dark:text-teal-100"><div><p className="opacity-70">Metal value</p><p className="mt-1 font-semibold">PKR {Number(previews[index].metalValue).toLocaleString()}</p></div><div><p className="opacity-70">Making charge</p><p className="mt-1 font-semibold">PKR {Number(previews[index].makingCharge).toLocaleString()}</p></div><div><p className="opacity-70">Item price</p><p className="mt-1 font-semibold">PKR {Number(previews[index].calculatedPrice).toLocaleString()}</p></div></div></> : <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{previews[index]?.warning || `Enter the product's ${product.metalType} purity and this variant's weight to preview pricing. A published rate is required before publishing.`}</p>}</div>}</div>)}
           </Section>
 
           <Section id="search" number="6" title="Search and display" description="Help shoppers discover this product and control how it appears in search results.">

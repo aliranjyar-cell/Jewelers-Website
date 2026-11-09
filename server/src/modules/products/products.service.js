@@ -194,10 +194,10 @@ async function saveVariant(connection, productId, variant, metalType, purity) {
   if (variant.id) {
     const [result] = await connection.execute(
       `UPDATE product_variants SET sku = ?, option_label = ?, weight_grams = ?, pricing_mode = ?,
-       fixed_price_pkr = ?, making_charge_type = ?, making_charge_pkr = ?, stock_quantity = ?,
+       fixed_price_pkr = ?, making_charge_type = ?, making_charge_pkr = ?,
        is_available = ?, availability = ?, option_values = ? WHERE id = ? AND product_id = ?`,
       [variant.sku, variant.optionLabel, variant.weightGrams, variant.pricingMode, variant.fixedPrice,
-        variant.makingChargeType, variant.makingCharge, variant.stockQuantity, available ? 1 : 0,
+        variant.makingChargeType, variant.makingCharge, available ? 1 : 0,
         variant.availability, JSON.stringify(variant.optionValues), variant.id, productId],
     );
     if (!result.affectedRows) fail('A variant no longer belongs to this product. Please reload and try again.', 409);
@@ -205,10 +205,10 @@ async function saveVariant(connection, productId, variant, metalType, purity) {
     await connection.execute(
       `INSERT INTO product_variants
        (product_id, sku, option_label, weight_grams, pricing_mode, fixed_price_pkr, making_charge_type,
-        making_charge_pkr, stock_quantity, is_available, availability, option_values)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        making_charge_pkr, is_available, availability, option_values)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [productId, variant.sku, variant.optionLabel, variant.weightGrams, variant.pricingMode,
-        variant.fixedPrice, variant.makingChargeType, variant.makingCharge, variant.stockQuantity,
+        variant.fixedPrice, variant.makingChargeType, variant.makingCharge,
         available ? 1 : 0, variant.availability, JSON.stringify(variant.optionValues)],
     );
   }
@@ -234,6 +234,16 @@ export async function listProductCategories() {
      GROUP BY c.id ORDER BY c.sort_order, c.name`,
   );
   return rows;
+}
+
+export async function listPublishedCategories() {
+  const [rows] = await pool.execute(
+    `SELECT c.id, c.name, c.slug, COUNT(p.id) AS productCount
+     FROM categories c JOIN products p ON p.category_id = c.id
+     WHERE c.is_active = 1 AND p.status = 'published'
+     GROUP BY c.id ORDER BY c.sort_order, c.name`,
+  );
+  return rows.map((row) => ({ ...row, id: String(row.id), productCount: Number(row.productCount) }));
 }
 
 export async function listProducts({ search = '', status = '', page = 1, pageSize = 20 } = {}) {
@@ -296,7 +306,8 @@ export async function getPublishedProductBySlug(slug) {
     pool.execute(
       `SELECT v.id, v.sku, v.option_label AS optionLabel, v.weight_grams AS weightGrams,
        v.pricing_mode AS pricingMode, v.fixed_price_pkr AS fixedPrice, v.making_charge_type AS makingChargeType,
-       v.making_charge_pkr AS makingCharge, v.stock_quantity AS stockQuantity, v.availability
+       v.making_charge_pkr AS makingCharge, v.stock_quantity AS stockQuantity, v.availability,
+       (SELECT COALESCE(SUM(ir.quantity), 0) FROM inventory_reservations ir WHERE ir.variant_id = v.id AND ir.status = 'reserved') AS reservedQuantity
        FROM product_variants v JOIN products p ON p.id = v.product_id
        WHERE p.slug = ? AND p.status = 'published' ORDER BY v.id`, [slug],
     ),
@@ -321,7 +332,9 @@ export async function getPublishedProductBySlug(slug) {
         price = Math.round((metalValue + makingCharge) * 100) / 100;
       }
     }
-    resultVariants.push({ ...variant, weightGrams: weight, fixedPrice: price, ratePerGram, rateAvailable, makingCharge: making, stockQuantity: Number(variant.stockQuantity) });
+    const stockQuantity = Number(variant.stockQuantity);
+    const reservedQuantity = Number(variant.reservedQuantity || 0);
+    resultVariants.push({ ...variant, weightGrams: weight, fixedPrice: price, ratePerGram, rateAvailable, makingCharge: making, stockQuantity, reservedQuantity, availableQuantity: variant.availability === 'available' ? Math.max(0, stockQuantity - reservedQuantity) : 0 });
   }
   return {
     id: String(product.id), ...product, tags, isFeatured: Boolean(product.isFeatured),
@@ -332,6 +345,45 @@ export async function getPublishedProductBySlug(slug) {
 export async function listPublishedProductSlugs() {
   const [rows] = await pool.execute("SELECT slug, updated_at AS updatedAt FROM products WHERE status = 'published' ORDER BY updated_at DESC");
   return rows;
+}
+
+export async function listPublishedProducts({ search = '', category = '', page = 1, pageSize = 20 } = {}) {
+  const clauses = ["p.status = 'published'"];
+  const values = [];
+  if (search) {
+    clauses.push('(p.name LIKE ? OR p.slug LIKE ?)');
+    values.push(`%${search}%`, `%${search}%`);
+  }
+  if (category) {
+    clauses.push('c.slug = ?');
+    values.push(category);
+  }
+  const where = `WHERE ${clauses.join(' AND ')}`;
+  const [[countRows], [rows]] = await Promise.all([
+    pool.execute(`SELECT COUNT(*) AS total FROM products p LEFT JOIN categories c ON c.id = p.category_id ${where}`, values),
+    pool.execute(
+      `SELECT p.id, p.name, p.slug, p.description, p.product_mode AS productMode, p.metal_type AS metalType,
+       p.purity, c.name AS category, p.is_featured AS isFeatured, p.updated_at AS updatedAt,
+       (SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.sort_order, pi.id LIMIT 1) AS image,
+       (SELECT MIN(v.fixed_price_pkr) FROM product_variants v WHERE v.product_id = p.id AND v.pricing_mode = 'fixed') AS minPrice,
+       (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.id) AS variantCount
+       FROM products p LEFT JOIN categories c ON c.id = p.category_id ${where}
+       ORDER BY p.is_featured DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?`,
+      [...values, pageSize, (page - 1) * pageSize],
+    ),
+  ]);
+  return {
+    items: rows.map((row) => ({
+      ...row,
+      id: String(row.id),
+      isFeatured: Boolean(row.isFeatured),
+      minPrice: row.minPrice === null ? null : Number(row.minPrice),
+      variantCount: Number(row.variantCount),
+    })),
+    total: Number(countRows[0].total),
+    page,
+    pageSize,
+  };
 }
 
 export async function saveProduct(id, input) {
@@ -381,6 +433,18 @@ export async function saveProduct(id, input) {
     }
 
     const existingVariantIds = new Set(variants.filter((variant) => variant.id).map((variant) => variant.id));
+    if (id) {
+      const keepClause = existingVariantIds.size
+        ? `AND v.id NOT IN (${[...existingVariantIds].map(() => '?').join(',')})`
+        : '';
+      const [reservedRows] = await connection.execute(
+        `SELECT COUNT(*) AS total FROM inventory_reservations ir
+         JOIN product_variants v ON v.id = ir.variant_id
+         WHERE v.product_id = ? AND ir.status = 'reserved' ${keepClause}`,
+        [id, ...existingVariantIds],
+      );
+      if (Number(reservedRows[0]?.total || 0) > 0) fail('A variant with an open order reservation cannot be removed. Release or fulfill the reservation first.', 409);
+    }
     if (id && existingVariantIds.size) {
       const placeholders = [...existingVariantIds].map(() => '?').join(',');
       await connection.execute(`DELETE FROM product_variants WHERE product_id = ? AND id NOT IN (${placeholders})`, [id, ...existingVariantIds]);

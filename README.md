@@ -13,7 +13,7 @@ React single-page storefront and admin application with a Node.js API and MySQL 
 
 1. Install Node.js 22.12+ (the current environment has Node.js 24).
 2. Start Apache/MySQL in XAMPP and create a database named `jewelry_store` using `utf8mb4`.
-3. Import `database/schema.sql` through phpMyAdmin or the MySQL client, then apply migrations `001_admin_auth.sql`, `002_admin_dashboard_indexes.sql`, and `003_product_management.sql` in order.
+3. Import `database/schema.sql` through phpMyAdmin or the MySQL client, then apply migrations `001_admin_auth.sql`, `002_admin_dashboard_indexes.sql`, `003_product_management.sql`, and `004_inventory_management.sql` in order.
 4. Copy `server/.env.example` to `server/.env`, set the local database credentials, and set `AUTH_ENCRYPTION_KEY` to a private Base64-encoded 32-byte key (generate one with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"`).
 5. Install workspace dependencies with `npm install` from the project root.
 6. Run both applications with `npm run dev` from the root.

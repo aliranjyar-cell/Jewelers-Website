@@ -5,8 +5,8 @@ import { formatNumber } from "../utils/format";
 import { ActionLink, Badge, Card, CardHeader, EmptyState, IconTile, Segmented, Skeleton, TextLink } from "./ui";
 
 const TABS = {
-  out_of_stock: { label: "Out of stock", icon: PackageX, tone: "danger", action: "Restock" },
-  low_stock: { label: "Low stock", icon: PackageMinus, tone: "warning", action: "Restock" },
+  out_of_stock: { label: "Out of stock", icon: PackageX, tone: "danger", action: "Receive stock" },
+  low_stock: { label: "Low stock", icon: PackageMinus, tone: "warning", action: "Receive stock" },
   draft: { label: "Drafts", icon: Pencil, tone: "info", action: "Edit product" },
   incomplete: { label: "Needs info", icon: ImageOff, tone: "accent", action: "Complete" },
 };
@@ -133,7 +133,7 @@ export default function StockAlerts({ stock, loading, className = "", delay = 0 
                     {describe(item)}
                   </p>
                 </div>
-                <ActionLink to={adminPaths.productEdit(item.id)}>{tab.action}</ActionLink>
+                <ActionLink to={item.type === "out_of_stock" || item.type === "low_stock" ? adminPaths.inventory : adminPaths.productEdit(item.id)}>{tab.action}</ActionLink>
               </li>
             ))}
           </ul>
