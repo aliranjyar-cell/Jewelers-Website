@@ -1,5 +1,5 @@
 import { env } from '../../config/env.js';
-import { AuthError, loginAdmin, revokeSession, sessionCsrfToken } from './auth.service.js';
+import { AuthError, changeAdminPassword, loginAdmin, revokeSession, sessionCsrfToken } from './auth.service.js';
 import { getSessionToken } from '../../middleware/requireAuth.js';
 
 const cookieOptions = (token, maxAge) => [
@@ -41,4 +41,38 @@ export async function logout(request, response, next) {
     response.setHeader('Cache-Control', 'no-store');
     response.status(204).end();
   } catch (error) { next(error); }
+}
+
+export async function changePassword(request, response, next) {
+  try {
+    response.setHeader('Cache-Control', 'no-store');
+    const { currentPassword, newPassword, signOutOtherSessions } = request.body || {};
+    const fieldErrors = {};
+    if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > 1024) {
+      fieldErrors.currentPassword = 'Enter your current password.';
+    }
+    if (typeof newPassword !== 'string' || !newPassword || newPassword.length > 128) {
+      fieldErrors.newPassword = 'Enter a new password of no more than 128 characters.';
+    }
+    if (typeof signOutOtherSessions !== 'boolean') {
+      throw new AuthError('Invalid password-change request.', 400);
+    }
+    if (Object.keys(fieldErrors).length) {
+      const error = new AuthError('Check the password fields and try again.', 400);
+      error.fieldErrors = fieldErrors;
+      throw error;
+    }
+
+    await changeAdminPassword({
+      userId: request.admin.id,
+      sessionId: request.adminSessionId,
+      currentPassword,
+      newPassword,
+      signOutOtherSessions,
+    });
+    response.status(204).end();
+  } catch (error) {
+    if (error.retryAfter) response.setHeader('Retry-After', String(error.retryAfter));
+    next(error);
+  }
 }

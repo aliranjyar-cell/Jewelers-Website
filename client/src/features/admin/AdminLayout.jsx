@@ -130,7 +130,7 @@ export default function AdminLayout() {
                 {logoutError}
               </p>
             )}
-            <Outlet />
+            <Outlet context={{ user: auth.user, csrfToken: auth.csrfToken }} />
           </div>
         </main>
       </div>

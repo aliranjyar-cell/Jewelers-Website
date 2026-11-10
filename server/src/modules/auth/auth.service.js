@@ -171,6 +171,83 @@ export async function revokeSession(token) {
   if (token) await pool.execute('DELETE FROM admin_sessions WHERE token_hash = ?', [tokenHash(token)]);
 }
 
+export async function changeAdminPassword({ userId, sessionId, currentPassword, newPassword, signOutOtherSessions }) {
+  const connection = await pool.getConnection();
+  const attemptKey = createHash('sha256').update(`password-change:${userId}`).digest('hex');
+  try {
+    await connection.beginTransaction();
+    const [[user]] = await connection.execute(
+      'SELECT id, email, full_name, password_hash, role, is_active FROM users WHERE id = ? LIMIT 1 FOR UPDATE',
+      [userId],
+    );
+    if (!user || user.role !== 'admin' || !user.is_active) throw new AuthError('Authentication required.', 401);
+
+    if (!await rateLimitAttempt(connection, attemptKey, null)) {
+      const [[lock]] = await connection.execute(
+        'SELECT GREATEST(1, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), locked_until)) AS retry_after FROM auth_login_attempts WHERE bucket_key = ?',
+        [attemptKey],
+      );
+      const error = new AuthError('Too many password attempts. Please wait before trying again.', 429);
+      error.retryAfter = Number(lock.retry_after) || 60;
+      throw error;
+    }
+
+    if (!await verifyPassword(currentPassword, user.password_hash)) {
+      await rateLimitAttempt(connection, attemptKey, true);
+      await connection.commit();
+      const error = new AuthError('The current password is incorrect.', 400);
+      error.fieldErrors = { currentPassword: error.message };
+      throw error;
+    }
+
+    const passwordError = validateAdminPassword(newPassword, currentPassword, user);
+    if (passwordError) {
+      await connection.commit();
+      const error = new AuthError(passwordError, 400);
+      error.fieldErrors = { newPassword: passwordError };
+      throw error;
+    }
+
+    await rateLimitAttempt(connection, attemptKey, false);
+    const passwordHash = await hashPassword(newPassword);
+    await connection.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, user.id]);
+    if (signOutOtherSessions) {
+      await connection.execute('DELETE FROM admin_sessions WHERE user_id = ? AND id <> ?', [user.id, sessionId]);
+    }
+    await connection.commit();
+  } catch (error) {
+    if (connection.rollback) await connection.rollback().catch(() => {});
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+function validateAdminPassword(password, currentPassword, user) {
+  if (password.length < 12) return 'Use at least 12 characters.';
+  if (password.length > 128) return 'Use no more than 128 characters.';
+  if (password === currentPassword) return 'Choose a password different from your current password.';
+
+  const characterTypes = [
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+    /[^a-zA-Z0-9]/.test(password),
+  ].filter(Boolean).length;
+  if (password.length < 16 && characterTypes < 3) {
+    return 'Use at least 16 characters, or include at least three types of characters.';
+  }
+
+  const normalized = password.toLowerCase();
+  const personalTerms = [user.full_name, user.email?.split('@')[0]]
+    .flatMap((value) => String(value || '').toLowerCase().split(/[\s@._+-]+/))
+    .filter((term) => term.length >= 3);
+  if (personalTerms.some((term) => normalized.includes(term))) {
+    return 'Do not include your name or email address in the password.';
+  }
+  return '';
+}
+
 function publicUser(user) { return { id: user.id, email: user.email, name: user.full_name, role: user.role }; }
 
 function base32Encode(buffer) {

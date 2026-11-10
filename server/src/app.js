@@ -93,5 +93,6 @@ app.use((error, _request, response, _next) => {
   response.status(error.status || 500).json({
     error: error.status ? error.message : 'Internal server error',
     ...(error.details ? { details: error.details } : {}),
+    ...(error.fieldErrors ? { fieldErrors: error.fieldErrors } : {}),
   });
 });
